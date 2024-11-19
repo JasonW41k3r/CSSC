@@ -1,0 +1,13 @@
+The Time-stamp: line indicates when this file was last modified.
+Time-stamp: <1999-03-13 11:52:17 james>
+
+This file points out features of SCCS that are missing from CSSC, by
+accident or design, but are not currently listed in the TODO file.
+The reason they're not listed in the TODO file is generally either
+that they involve a lot of work or that I don't think they're
+important.
+
+
+sccs-comb is not implemented.
+
+sccs-help is not implemented.  It won't be, either (see the manual).

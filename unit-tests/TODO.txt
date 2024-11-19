@@ -1,0 +1,28 @@
+bodyio.h
+delta-iterator.h
+except.h
+filediff.h
+file.h
+fileiter.h
+filelock.h
+filepos.h
+ioerr.h
+linebuf.h
+my-getopt.h
+pfile.h
+quit.h
+run.h
+sccsfile.h
+sccsname.h
+seqstate.h
+sf-chkmr.h
+version.h
+
+// should go, but means an autoconf/gnulib change.
+sysnerr.h
+sysdep.h
+
+// Probably contains no code.
+cssc.h
+valcodes.h
+defaults.h

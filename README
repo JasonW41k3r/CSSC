@@ -1,0 +1,206 @@
+This is the README file for GNU CSSC, a workalike for the source code
+control system SCCS.  It is based on the MySC package by Ross Ridge.
+
+Although this is a full public release of CSSC, there are features of
+the SCCS suite which are not fully implemented.  The most important of
+these is excluded deltas.
+
+Specific information about compiling CSSC on particular platforms is
+provided in the file "docs/Platforms".
+
+==============================================================================
+			Quick Start
+------------------------------------------------------------------------------
+0.      Configuring the package
+
+ You will need a C++ compiler that can compile C++11.  Most C++
+ compilers these days will do that.
+
+ To configure CSSC before compiling it, run the "configure" script.
+ See the file INSTALL for the generic options you can use with "configure".
+ Options for "configure" that are specific to CSSC are detailed below.
+
+--enable-binary
+
+    This is the default setting (but the default setting may change
+    in the future).
+
+    Enables support for creating "binary" SCCS files (required for
+    interoperability with Solaris).  If binary support is disabled,
+    encoded SCCS files can still be read, but not created.  You should
+    disable this feature only if you need to interoperate with a
+    version of SCCS which lacks binary file support.
+
+    The setting of this option can be overridden at runtime by setting
+    the environment variable CSSC_BINARY_SUPPORT to "disable".
+
+ --disable-binary
+
+    Turns off suport for creating encoded ("binary") SCCS files.
+    CSSC will still handle these as input, but will never create one,
+    when this option is used.
+
+    The setting of this option can be overridden at runtime by setting
+    the environment variable CSSC_BINARY_SUPPORT to "enable".
+
+--enable-max-line-length=N
+
+    The default setting corresponds with N=0.
+
+    Sets the maximum line length allowed in SCCS files to N.  By
+    default, CSSC has no limit.  Use this option only if you need to
+    make CSSC interoperate with other versions of SCCS.  This limit
+    applies only to the actual body lines in the file, and are not
+    checked for (e.g.) comments.  This means that by entering a
+    very long comment, you can make CSSC produce an SCCS file which
+    cannot be read by some other versions of SCCS.
+
+    The setting of this option can be overridden at runtime by setting
+    the environment variable CSSC_MAX_LINE_LENGTH to a positive integer.
+    Setting CSSC_MAX_LINE_LENGTH to 0 removes the limit (and so CSSC will
+    handle lines of any length).
+
+
+--disable-valgrind
+
+    Disables the use of valgrind for the unit and regression tests.
+    By default, valgrind will be used if it is available.  If you
+    would like to disable valgrind at configure time, pass the
+    --disable-valgrind option.  To disable it afterward, you can
+    simply set the enviroment variable CSSC_DISABLE_VALGRIND.
+
+    Occasionally a system binary (for example a shell) which is used
+    to run the tests will have a behaviour that Valgrind doesn't like.
+    Valgrind normally shows the name of the problem binary in its
+    error report.  If "make check" or "make distcheck" fail in this
+    way, try again with "env CSSC_DISABLE_VALGRIND=1 make check" or
+    similarly for "make distcheck".
+
+1.	Compiling
+
+ You will probably need to compile the software with GNU make.
+
+ The default installation directory for the binaries is
+ /usr/local/libexec/cssc, except for the sccs comand, which gets
+ installed in /usr/local/bin.
+
+ If you want to change this, you will need to read the file INSTALL.
+
+ If, for example, you want to install the files in /usr/libexec/cssc
+ and so on rather than in /usr/local/..., you just need to pass the
+ argument "prefix=/usr" to make.
+
+ If, on the other hand, all you wanted to do was to install the binaries
+ in a normal binary directory, you can do this with the argument
+ "csscutildir=/usr/local/bin" to make.
+
+ The program "sccs" is sensitive to the setting of $(csscutildir) at
+ compile time, because it compiles in the value of that option as the
+ default place to find the various subprograms.
+
+ mkdir work
+ cd work
+ ../configure
+ make
+
+2.	Testing
+
+ Two types of tests are included with CSSC.  First, the unit tests in
+ the subdirectory "unit-tests".  These mostly test individual classes
+ or modules of CSSC (as opposed to running the CSSC binaries).
+ Second, there are regression tests in the subdirectory "tests".  The
+ regression tests are run on the built CSSC binaries.
+
+ The unit tests are much newer than the regression tests and for the
+ moment they have lower test coverage.
+
+ To run all the tests (unit tests and regresion tests), run "make
+ check" in the top-level directory:
+
+ if make check 2>&1 | tee make.log
+ then
+	echo SUCCESS
+ else
+	echo FAILURE
+ fi
+
+ This runs the unit tests first and if they succeed, the regression
+ tests.  If either fails, take a look at "make.log".
+
+ If you want to run just the unit tests, do this:
+  cd unit-tests && make check
+
+ If you want to run just the regression tests, do this:
+  cd tests && make check
+
+ Note that the regression test process accepts several environment
+ variables which allow you to point it at a particular installation of
+ the tools.  If you have used these variables for something else, the
+ test will fail.  These variables are :-
+
+ $dir, $get, $admin, $cdc, $prs, $prt, $delta, $sact, $sccsdiff,
+ $unget, $what, $rmdel, $sccs
+
+ If the regression tests failed, I'll definitely need some more
+ information and so it would be best to keep the test outputs in case
+ I need them in order to fix the bug ("tar cf failed-tests.tar tests"
+ should do fine for that).  I may need to ask you to send a compressed
+ version of this to me.
+
+ If the unit tests failed, I only need you to send the stderr output
+ (i.e. "make.log" from the example above).
+
+ Valgrind will be used for the tests, if it is available and
+ --disable-valgrind was not in the options passed to configure.  This
+ slows the tests down quite a lot.  To prevent the use of valgrind,
+ you can set the environment variable CSSC_DISABLE_VALGRIND.
+
+3.	Installing
+ cd work
+ make install
+
+==============================================================================
+
+SCCS commands implemented this package are: admin, cdc, delta, get,
+prs, prt, sccsdiff, rmdel, sact, sccs, unget, val and what.  Not all
+options and capabilities of the commands have been implemented yet,
+and the comb and help commands are not provided at all.
+
+You can use these tools to convert your SCCS repository to RCS or CVS
+- to do this, you will also need the SCCS-to-RCS conversion script by
+Jonathan Leffler (which should be included in the source distribution
+of CVS).
+
+Unimplemented features include the "-h" option of admin (use "val"
+instead), ignored deltas (delta -g), l-files (get -l).  Some features
+like including and excluding deltas (get -i -x) have been implemented
+but not extensively tested.
+
+See the file INSTALL for information on how to compile this package.
+Send any questions or bug reports by e-mail to the <bug-cssc@gnu.org>
+mailing list.  After you have compiled CSSC, _PLEASE_ run the test
+suite, as described in docs/TESTING.  I'm particularly intersested in
+success reports for platforms not in the "docs/Platforms" file.
+
+To generate the manual, use one of these commands:
+
+   To make the PDF format manual:        make pdf
+   To make the PostScript format manual: make ps
+   To make the DVI format manual:	 make dvi
+   To make the HTML format manual:	 make html
+   To make the Info format manual:	 make info
+
+If you don't have TeX, you can read the "info" documentation with
+either the GNU "info" program, or Emacs.
+
+
+To regenerate all the machine-generated files from their ultimate
+sources (for example, after checking the controlled sources out of a
+CVS repository), use
+	./bootstrap
+followed by the usual invocation of "configure" and "make".
+
+The most helpful thing you could possibly do for this project would be
+to contribute a new test case.  It isn't hard; the test scripts are
+just shell scripts; instructions on how to do this are provided in the
+manual.

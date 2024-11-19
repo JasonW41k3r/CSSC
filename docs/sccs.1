@@ -1,0 +1,593 @@
+.\" Copyright (c) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2007,
+.\" 2008, 2009, 2010, 2011, 2014, 2019, 2024 Free Software Foundation,
+.\" Inc.
+.\"
+.\" Copyright (c) 1983, 1990, 1993
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. All advertising materials mentioning features or use of this software
+.\"    must display the following acknowledgement:
+.\"	This product includes software developed by the University of
+.\"	California, Berkeley and its contributors.
+.\" 4. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"	@(#)sccs.1	8.1 (Berkeley) 6/6/93
+.\"
+.\" See also the file COPYING.bsd in the CSSC source distribution.
+.Dd June 3, 1998
+.Dt SCCS 1
+.Os GNU
+.\" .Os was BSD 4.2
+.Sh NAME
+.Nm sccs
+.Nd front end for the
+.Li SCCS
+subsystem
+.Sh SYNOPSIS
+.Nm sccs
+.Op Fl r
+.Op Fl d Ar path
+.Op Fl T
+.Op Fl V
+.Op Fl -version
+.Op Fl p Ar path
+[--prefix=\fIpath\fP]
+.Op Fl -cssc
+.Ar command
+.Op flags
+.Op Ar
+.Sh DESCRIPTION
+.Nm Sccs
+is a front end to the
+.Li SCCS
+programs
+that
+helps them mesh more cleanly
+with
+the rest of UNIX.
+It
+also includes the capability to run
+.Dq set user id
+to another user
+to
+provide additional protection (but see the section entitled BUGS).
+.Pp
+Basically,
+.Nm sccs
+runs the command with the specified
+.Ar flags
+and
+.Ar args .
+Each argument is normally modified to be prepended with
+.Dq Li SCCS/s. .
+.Pp
+Flags to be interpreted by the
+.Nm sccs
+program must be before the
+.Ar command
+argument.
+Flags to be passed to the actual
+.Li SCCS
+program must come after the
+.Ar command
+argument.
+These flags are specific to the command and
+are discussed in the documentation for that command.
+.Pp
+Besides the usual
+.Li SCCS
+commands,
+several
+.Dq pseudo-commands
+can be issued.
+These are:
+.Bl -tag -width deledit
+.It Cm edit
+Equivalent
+to
+.Dq Li get \-e .
+.It Cm delget
+Perform a delta on the named files and
+then get new versions.
+The new versions will have id keywords expanded, and
+will not be editable.
+The
+.Fl m ,
+.Fl p ,
+.Fl r ,
+.Fl s ,
+and
+.Fl y
+flags will be passed to
+.Nm delta ,
+and the
+.Fl b,
+.Fl c ,
+.Fl e ,
+.Fl i ,
+.Fl k ,
+.Fl l ,
+.Fl s ,
+.\" anybody who has a bad xterm which is almost anyone
+and
+.Fl x
+flags will be passed to get.
+.It Cm deledit
+Equivalent
+to
+.Nm delget
+except that the
+.Nm get
+phase includes the
+.Fl e
+flag.
+This
+option is useful for making a
+.Em checkpoint
+of your current editing phase.  The same flags will be passed to delta
+as described above, and
+all the flags listed for
+.Nm get
+above except
+.Fl e
+and
+.Fl k
+are
+passed to
+.Nm edit .
+.It Cm create
+Creates
+an
+.Li SCCS
+file ,
+taking
+the initial contents from the file of the same name.
+Any
+flags to
+.Nm admin
+are accepted.  If the creation is successful,
+the files are renamed with a comma on the front.
+These should be removed when you are convinced that the
+.Li SCCS
+files
+have been created successfully.
+.It Cm fix
+Must
+be followed by a
+.Fl r
+flag.
+This command essentially removes the named delta, but
+leaves you with a copy of the delta
+with the changes that were in it.  It
+is useful for fixing small compiler bugs, etc.
+Since it doesn't leave audit trails, it should be used carefully.
+.It Cm clean
+This routine removes everything from the current directory
+that can be recreated from SCCS files.
+It will not remove any files being edited.
+If the
+.Fl b
+flag is given, branches are ignored in the determination of
+whether they are being edited; this
+is dangerous if you are keeping the branches in the
+same directory.
+.It Cm unedit
+This
+is the opposite of an
+.Nm edit
+or
+a
+.Dq Li get \-e .
+It should be used with extreme caution, since
+any changes you made since the get will be irretrievably lost.
+.It Cm info
+Gives a listing of all files being edited.
+If the
+.Fl b
+flag
+is given, branches (i.e.,
+.Li SID Ns \&\'s
+with two or fewer components)
+are ignored.  If the
+.Fl u
+flag is given (with an optional argument) then
+only files being edited by you (or the named user) are listed.
+.It Cm check
+Like
+.Nm info
+except that nothing is printed if nothing is being edited, and
+a non-zero exit status is returned if anything is being edited.
+The intent is to have this included in an
+.Em install
+entry in a makefile to insure that everything is included into the
+.Li SCCS
+file before a version is installed.
+.It Cm tell
+Gives a newline-separated list of the files being edited
+on the standard output.  Takes the
+.Fl b
+and
+.Fl u
+flags like
+.Nm info
+and
+.Nm check .
+.It Cm diffs
+Gives a
+.Nm diff
+listing between the current version of the
+program(s) you have out for editing and the versions in
+.Li SCCS
+format.
+The
+.Fl r ,
+.Fl c ,
+.Fl i ,
+.Fl x ,
+and
+.Fl t
+flags are passed to
+.if n \{\
+.	br
+.\}
+.Nm get ;
+the
+.Fl l ,
+.Fl s ,
+.Fl e ,
+.Fl f ,
+.Fl h ,
+.Fl u ,
+.Fl n ,
+.Fl w ,
+and
+.Fl b
+options are passed to
+.Nm diff .
+The
+.Fl a ,
+.Fl B ,
+.Fl d ,
+.Fl H ,
+.Fl p ,
+.Fl q ,
+.Fl s ,
+.Fl v ,
+and
+.Fl y
+options are passed to
+.Nm diff
+but these options are (usually) specific to GNU diff, and so may not
+be supported on systems other than GNU.
+The
+.Fl C
+flag is passed to
+.Nm diff
+as
+.Fl c .
+.It Cm print
+This command prints out verbose information
+about the named files.
+.El
+.Pp
+Certain
+commands (such as
+.Nm admin  )
+cannot be run
+.Dq Li set user id
+by all users, since this would allow anyone to change the authorizations.
+These commands are always run as the real user.
+.Pp
+.Bl -tag -width --prefix=foo
+.It Fl -cssc
+Returns a zero exit value (for the GNU version only).  No other
+operation is performed.  This flag is used by the test suite to
+determine if it needs to use the
+.Fl -prefix
+flag in order to find the correct subprograms (non-GNU versions of
+sccs have the full pathnames for the subprograms hard-coded).  In
+this way, the CSSC test suite can be compiled ready for installation
+in a particular directory, but the test suite can still be run before
+the suite has been installed in its final position.  This option is
+supported only by the GNU version of
+.Nm sccs .
+.It Fl -prefix=foo
+Uses
+.Ar foo
+as the prefix for SCCS sub-commands.   The default prefix
+is compiled into the program and is usually
+.Dq /usr/sccs .
+You can discover the prefix setting with the
+.Fl V
+flag.  This prefix is used without a final slash being appended, so
+values like
+.Dq /usr/local/bin/cssc-
+can be used.  This option is disallowed if the program is installed
+setuid, and it is supported only by the GNU version of
+.Nm sccs .
+.Em "This option is not equivalent to the"
+.Fl p
+.Em flag .
+.It Fl -version
+Show version information; synonymous with the
+.Fl V
+flag.
+.It Fl r
+Runs
+.Nm sccs
+as the real user rather than as whatever effective user
+.Nm sccs
+is
+.Dq Li set user id
+to.
+.It Fl d
+Specifies a root directory for the
+.Li SCCS
+files.
+The default is the current directory.
+If environment variable
+.Ev PROJECTDIR
+is set,
+it will be used to determine the
+.Fl d
+flag.
+.It Fl p
+Defines the pathname of the directory in which the
+.Li SCCS
+files will be found;
+.Dq Li SCCS
+is the default.
+The
+.Fl p
+flag
+differs from the
+.Fl d
+flag
+in that the
+.Fl d
+argument is prepended to the entire pathname and the
+.Fl p
+argument is inserted before the final component of the pathname.
+For example,
+.Dq Li sccs \-d/x \-py get a/b
+will convert to
+.Dq Li get /x/a/y/s.b .
+The intent here is to create aliases such as
+.Dq Li alias syssccs sccs -d/usr/src
+which
+will be used as
+.Dq Li syssccs get cmd/who.c .
+.Em Please note that the
+.Fl p
+.Em flag is (very) different in purpose from the
+.Fl -prefix
+.Em option.
+.It Fl T
+This flag causes the program to emit a debugging trace on stdout.
+This flag may be disabled at compile time.
+.It Fl V
+Shows the version information for the
+.Nm sccs
+program, and the subcommand prefix being used.  This option is
+supported only by the GNU version of
+.Nm sccs .
+.El
+.Sh EXAMPLES
+To get a file for editing,
+edit it,
+and produce a new delta:
+.Pp
+.Dl sccs get \-e file.c
+.Dl ex file.c
+.Dl sccs delta file.c
+.Pp
+To get a file from another directory:
+.Pp
+.Dl sccs \-p/usr/src/sccs/s. get cc.c
+.Pp
+or
+.Pp
+.Dl sccs get /usr/src/sccs/s.cc.c
+.Pp
+To make a delta of a large number of files
+in the current directory:
+.Pp
+.Dl sccs delta *.c
+.Pp
+To get a list of files being edited that are not on branches:
+.Pp
+.Dl sccs info \-b
+.Pp
+To delta everything being edited by you:
+.Pp
+.Dl sccs delta \`sccs tell \-u\`
+.Pp
+In a makefile, to get source files
+from an
+.Li SCCS
+file if it does not already exist:
+.Pp
+.Dl SRCS = <list of source files>
+.Dl $(SRCS):
+.Dl \&\tsccs get $(REL) $@
+.Sh MAINTAINER
+This version of
+.Nm sccs
+is maintained by James Youngman, <jay@gnu.org>.
+.Sh ENVIRONMENT
+.Bl -tag -width Ar
+.It Ev PROJECTDIR
+.Pp
+The PROJECTDIR environment variable is checked by the
+.Fl d
+flag.  If
+it begins with a slash, it is taken directly; otherwise,
+the home directory of a user of that name is
+examined for a subdirectory
+.Dq Li src
+or
+.Dq Li source .
+If such a directory is found, it is used.
+.El
+.Sh DIAGNOSTICS
+There are many error messages, mostly brief but fairly obvious.
+If all goes acording to plan, the program's exit status is zero.
+Otherwise, it will be one of the following values:-
+.Bl -tag -width >128
+.It 0
+No error; everything proceeded according to plan.
+.It 64
+Command line usage error
+.\" 65 data format error
+.\" 66 cannot open input
+.\" 67 addressee unknown
+.\" 68 host name unknown
+.It 69
+Could not exec program
+.It 70
+Internal software error.  This should not happen.
+.It 71
+System error (e.g., can't fork)
+.\" 72 critical OS file missing
+.\" 73 can't create (user) output file
+.\" 74 input/output error
+.It 75
+Temporary failure; retry later.  This error is returned when the
+system runs out of memory.
+.\" 76 remote error in protocol
+.It 77
+Permission denied.  This error occurs when the program has been
+installed setuid, but SCCSDIR was not configured in at compile time.
+This can also happen if something goes wrong when the program tries
+to drop its setuid or setgid privileges.
+.\" 78 configuration error
+.\" >128
+When a program exits due to a fatal signal, the shell usually adds 128
+to the signal number and uses that as the return value.   Some systems
+also produce values in this range if there was a problem with the
+dynamic linker.
+.El
+.Sh SEE ALSO
+.Xr what 1 ,
+.Xr sccs-admin 1 ,
+.Xr sccs-cdc 1 ,
+.Xr sccs-comb 1 ,
+.Xr sccs-delta 1 ,
+.Xr sccs-get 1 ,
+.Xr sccs-help 1 ,
+.Xr sccs-prs 1 ,
+.Xr sccs-prt 1 ,
+.Xr sccs-rmchg 1 ,
+.Xr sccs-rmdel 1 ,
+.Xr sccs-sact 1 ,
+.Xr sccsdiff 1 ,
+.Xr sccs-unget 1 ,
+.Xr sccs-val 1 ,
+.Xr make 1 ,
+.Xr rcsintro 1 ,
+.Xr cvs 1 ,
+.Xr sccsfile 5 .
+.Rs
+.%A Eric Allman
+.%T "An Introduction to the Source Code Control System"
+.Re
+.Rs
+.%A James Youngman
+.%B "CSSC: Compatibly Stupid Source Control"
+.Re
+.Sh COPYING
+Copyright \(co 1998
+.br
+Free Software Foundation, Inc.  All rights reserved.
+.Pp
+Copyright \(co 1983, 1990, 1993
+.br
+The Regents of the University of California.  All rights reserved.
+.Pp
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+.Bl -enum
+.It
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+.It
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+.It
+All advertising materials mentioning features or use of this software
+must display the following acknowledgement:
+.Pp
+.Rs
+This product includes software developed by the University of
+California, Berkeley and its contributors.
+.Re
+.It
+Neither the name of the University nor the names of its contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+.El
+.Pp
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+.Sh HISTORY
+The
+.Nm sccs
+command
+appeared in
+.Bx 4.3 .
+.Pp
+This version of
+.Nm sccs
+has been slightly modified to support
+.Nm "GNU Autoconf" ,
+and several new options (those beginning with two dashes and also
+.Fl V )
+and to make
+it somewhat more portable.
+The program otherwise remains largely unchanged.
+.Sh BUGS
+It should be able to take directory arguments on pseudo-commands
+like the
+.Li SCCS
+commands do.
+.Pp
+Though this program is mostly derived from the original
+.Bx
+code, the subprograms accompanying it in the CSSC suite (admin, get,
+delta and so on) are not the original AT&T code.  Please do not count
+on these programs being secure.
+.Pp
+Other known bugs are listed in the file BUGS, which accompanies GNU CSSC.

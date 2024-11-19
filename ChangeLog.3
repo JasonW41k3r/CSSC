@@ -1,0 +1,4094 @@
+2019-05-06  James Youngman  <jay@gnu.org>
+
+	Fix more compiler warnings.
+	* src/what.cc: Forward-declare usage().
+	* src/sccsfile.h: Declare print_flag2() functions.
+	* src/get.cc (main): Format the (unsigned in) line count with %u
+	instead of %d.
+	* src/environment.cc (max_sfile_line_len): Simplify a complex
+	boolean expression to silence a compiler warning suggesting
+	parentheses.
+	* src/writesubst.cc (write_subst): Print the output line number
+	with %u since it is an unsigned int.
+	* src/sf-write.cc (write_delta): Remove unsed variables "len" and
+	"i".
+	(write): Likewise, also "s".
+
+	Fix some compiler warnings. Also turn off warning options which
+	themselves just generate warnings.
+	* src/run.cc (run): Avoid mixing signed/unsigned quantities.
+	* src/sf-get2.cc (get): Avoid variable 'd' shadowing a variable of
+	the same name in an outer scope.
+	* src/sccsfile.h: Declare print_flag().
+	* src/cap.cc (cap_min): Simplify this function; we only use it for
+	trivially copyable types anyway.
+	* configure.ac: Disable some warnings known to the manywarnings
+	module (thus enabled with --enable-warnings) but which aren't
+	suitable for C++ compilation.  We disable them so that we don't
+	get a warning message from GCC about the inappropriate warning
+	option.
+
+	Use block I/O for encoded streams.
+	* src/encoding.cc (encode_line): return the number of bytes
+	output.
+	(encode_stream): Use the count returned by encode_line to perform
+	block I/O (with fwrite) instead of string I/O (with fprintf).
+
+	Move the implementation details of uuencoding/decoding into a
+	separate namespace.
+	* src/encoding.cc (encode): Put into an encoding_impl namespace to
+	emphasize that it is not intended as a public API for the rest of
+	the program to use.  It's not in an unnamed namespace since the
+	unit test still needs to use it.
+	* src/bodyio.h (encoding_impl): Put declarations of encode and
+	decode into this namespace.
+	* unit-tests/test_encoding.cc: Use the namespace-qualified names
+	for encode and decode.
+
+	Delete mylist.h.
+	* src/mylist.h: Delete mylist.h
+	* src/Makefile.am (noinst_HEADERS): Delete mylist.h
+	* src/sccsfile.cc: Don't include mylist.h.
+	* src/l-split.cc: Don't include mylist.h.
+	(split_comments): use std::vector<T> instead of mylist<T>.
+	* unit-tests/test_bigfile.cc: use std::vector<T> instead of
+	mylist<T>. Don't include mylist.h.
+	* unit-tests/test_delta.cc: Likewise.
+	* unit-tests/test_mylist.cc: Delete.
+	* unit-tests/Makefile.am (unit_tests): Remove test_mylist.
+
+	Switch class sccs_file from mylist<T> to vector<T>.
+	* src/sccsfile.h: use std::vector<T> instead of mylist<T>.
+	* src/sf-val.cc: Likewise.
+	* src/cdc.cc (main): Likewise.
+	* src/sf-prt.cc: Likewise.
+	* src/admin.cc (main): Likewise.
+	* src/sf-cdc.cc: Likewise.
+	* src/sf-admin.cc: Likewise.
+	* src/sf-write.cc: Likewise.
+	* src/get.cc (print_id_list): Likewise.
+	* src/sf-get.cc (prepare_seqstate_1): Likewise.
+	* src/sf-prs.cc (print_seq_list): Likewise.
+	* src/sf-rmdel.cc (is_seqlist_member): Likewise.
+
+	Switch test_delta-table.cc from mylist to vector.
+	* unit-tests/test_delta-table.cc: Switch data structures from
+	mylist<T> to std:vector<T> (for which mylist is an alias anyway).
+
+2019-05-05  James Youngman  <jay@gnu.org>
+
+	Switch class release_list from using mylist<T> to vector<T>.
+	* src/rel_list.h: Switch data structures from mylist<T> to
+	std:vector<T> (for which mylist is an alias anyway).
+	* src/rl-merge.cc (remove): Likewise.
+
+	Switch class sccs_file_iterator from using mylist<T> to
+	vector<T>.
+	* src/fileiter.h: Switch data structures from mylist<T> to
+	std:vector<T> (for which mylist is an alias anyway).
+
+	Switch class delta from using mylist<T> to vector<T>.
+	* src/delta.h: Switch data structures from mylist<T> to
+	std:vector<T> (for which mylist is an alias anyway).
+	* src/delta.cc (delta_main): Likewise.
+	* src/sf-delta.cc (add_delta): Likewise.
+
+2019-05-05  Martin Wilck  <mwilck@suse.com>  (tiny change)
+
+	sccs: comply with POSIX POS36-C rule.
+	POS36-C compliance requires that setgid() is called before
+	setuid(), and both called after relinquishing extra groups with
+	setgroups(). See
+	https://wiki.sei.cmu.edu/confluence/display/c/POS36-C.+Observe+correct+revocation+order+while+relinquishing+privileges
+	* configure.ac: check for setgroups()
+	* src/sccs.c (drop_privs): correct call order: setgroups, setgid,
+	setuid.
+
+2019-05-05  James Youngman  <jay@gnu.org>
+
+	Suggest setting CSSC_DISABLE_VALGRIND=1 if system binaries cause
+	tests to fail.
+	* README (--disable-valgrind): point out that occasionally, a
+	system binary will cause Valgrind checking to make tests
+	fail. Explain how to work around this problem.
+
+	Include config.h before other files.
+	* build-aux/find-out-of-order-includes.sh: Script for identifying
+	source files which include other headers before "config.h", which
+	gnulib doesn't like.
+	* src/version.cc: Include "config.h" before <stdio.h> to avoid
+	complaints from gnulib.
+
+2016-03-01  James Youngman  <jay@gnu.org>
+
+	Don't distrubite unit-tests/googletest/Makefile.in.
+	* unit-tests/Makefile.am (EXTRA_DIST): Don't include
+	googletest/Makefile.in, since we don't create that file, as
+	googletest is not in SUBDIRS.
+
+2016-02-28  James Youngman  <jay@gnu.org>
+
+	Add tests covering p-file validity checks in sact.
+	* src/pfile.cc (sccs_pfile): Validate the delta SID (instead of
+	only the gotten SID).  When rejecting an invalid date, say
+	"date/time", since it may in fact be the time field which is
+	incorrect.
+	* tests/common/test-common: New options to docommand,
+	--stderr_regex and stdout_regex, allowing regex (egrep) matching
+	of tool output.  Each has a --no* counterpart which turns the
+	option off again (this is useful for deteating the defaults
+	provided by functions which wrap docommand).
+	* tests/sact/pfile_corruption.sh: New test, covering the p-file
+	validity checks in sact.
+
+2016-02-24  James Youngman  <jay@gnu.org>
+
+	Don't use unique_ptr on the result of strdup, and other cleanup.
+	* src/sccsdate.cc (y2k_window): move all year windowing
+	calculations into this new function.
+	(is_leapyear): fix typo in comment.
+	(get_two_digits): Add specialization which takes a constr
+	string&.
+	(sccs_date::sccs_date): Use y2k_window.  Also, instead of using
+	unique_ptr on a pointer returned by strdup, just use a std::string
+	instance.
+	* src/sccsdate.h (class sccs_date): Remove the daysecond field.
+
+	Fix a number of problems identified by "make syntax-check".
+	* src/get.cc: Remove trailing blanks.
+	* src/Makefile.am: Likewise.
+	* src/l-split.cc: Likewise.
+	* src/get.cc: Likewise.
+	* src/prs.cc: Likewise.
+	* src/run.cc: Likewise.
+	* src/sccsfile.cc: Likewise.
+	* src/sccsfile.h: Likewise.
+	* Makefile.am (distcheck-hook): Remove trailing blank.
+	* src/sccs.c (gstrncat): Avoid spurious warning about reference to
+	strncpy() in a comment.
+	* tests/val/historical.sh: Remove empty lines at EOF.
+	* unit-tests/test_linebuf.cc: Likewise.
+	* build-aux/check-googletest-files.sh: Remove empty lines at EOF.
+	(deleteprefix): Remove trailing blanks.
+	* NEWS: Change "the the" to "the" in item for CSSC-1.3.2.  Remove
+	trailing blanks.
+	* src/sccsdate.cc (sccs_date::sccs_date): Avoid the use of strncpy.
+	* docs/cssc.texi (Admin Options): Don't say "see also @xref".
+	(Executable File Support): Remove trailing blanks.
+	* src/sf-prs.cc (prs): Don't use the space-tab combination.
+	* src/file.cc (get_mode_bits): Remove trailing blanks.
+	(is_writable): Likewise.
+
+	Make mylist a simple synonym for std::vector.
+	* src/mylist.h: Make mylist a simple synonym for std::vector.
+
+	Don't require mylist<T>::operator[] to assert on index errors.
+	* unit-tests/test_mylist.cc: Remove tests which verify that
+	mylist<T>::operator[] assert-fails when an index is out of range
+	(since std::vector does not do this).
+
+	Stop depending on mylist not actually being a synonym for std::vector.
+	* src/sf-prs.cc (print_string_list): Remove the two versions of
+	this function for std::vector<string> and mylist<string>.
+	Instead, implement a single template function which takes a range
+	of iterators.  This allows us not to care wither mylist is simply
+	compatible with std::vector, or actually is std::vector.
+	(print_delta): Update callers of print_string_list.
+
+	Include <algorithm> where it is needed, and not where it is not.
+	* src/sf-rmdel.cc: include the <algorithm> header since we use
+	std::find.
+	* src/mylist.h: Don't include <algorithm>, the transitive
+	inclusion of which sf-rmsel.cc was previously takign advantage
+	of.
+
+	Replace constructor from const set& with a range of iterators.
+	* src/mylist.h (mylist::mylist): Add constructor from a range of
+	input iterators, allowing initialization from any container.
+	Remove the special-purpose constructor from const set&.  This
+	change provides closer compatibility with std::vector<T>,
+	* src/delta.h (delta::delat): Initialize included_ and excluded
+	using the iterator range instead of plain const set&.
+
+2016-02-23  James Youngman  <jay@gnu.org>
+
+	Remove mylist<T>::operator+=(), implementing insert() instead.
+	* src/mylist.h (mylist::insert): add insert() method, forwarding
+	to std::vector<T>::insert(), as a replacement for
+	mylist::operator+=() (and that method is removed).
+	(mylist::cbegin): add, forwarding to items_.cbegin().
+	(mylist::cend): add, forwarding to items_.cend().
+	* src/delta.h (delta::prepend_comments): Implement.
+	* src/sf-cdc.cc (sccs_file::cdc): Call mylist::insert() instead of
+	the removed mylist<T>::operator+=().  Also use
+	delta::prepend_comments() to prepend comments instead of copying
+	the old comments, modifying the list and callign set_comments().
+	* unit-tests/test_mylist.cc (MylistTest::Catenate::TestBody): use
+	the new insert method to perform the concatenation, instead of the
+	removed method operator+=.
+
+2016-02-21  James Youngman  <jay@gnu.org>
+
+	Avoid unnecessary for loop in mylist::operator+=(const mylist&).
+	* src/mylist.h (mylist): Implement operator+= with a range insert
+	on the underlying vector.
+
+	Remove mylist<T>::operator-=(const mylist<T>&).
+	* src/mylist.h (mylist): remove mylist<T>::operator-=(const
+	mylist<T>&).
+
+	* unit-tests/test_mylist.cc: Remove tests of
+	mylist<T>::operator-=(const mylist<T>&).
+	* src/sccsfile.h (sccs_file::admin): change the type of
+	erase_users from mylist<string> to
+	std::unordered_set<std::string>.  This allows the implementation
+	to be more efficient without affecting the ordering of the
+	resulting user list.
+	* src/admin.cc (main): Update the type of erase_users
+	accordingly.
+	* src/sf-admin.cc (admin): take advantage of the efficiency of
+	std::unordered_set<T>::find() when computing the updated
+	authorized user list.  Hence we no longer need to call
+	mylist<T>::operator-=(const mylist<T>&).
+
+	Delete mylist<T>::add(), preferring push_back() instead.
+	* src/mylist.h (mylist): Delete mylist<T>::add() since we prefer
+	push_back().
+	* unit-tests/test_mylist.cc: Don't use or test .add(), but use or
+	test .push_back() there was previously .add().
+	* unit-tests/test_delta.cc: Don't use mylist<T>::add(), use
+	mylist<T>::push_back() instead.
+	* src/rl-merge.cc (merge): Use mylist<T>::push_back() instead of
+	mylist<T>::add().
+	* src/delta.h (delta::add_include): Likewise.
+	(delta::add_exclude): Likewise.
+	(delta::add_ignore): Likewise.
+	(delta::add_comment): Likewise.
+	* src/l-split.cc (split_comments): Likewise.
+	* src/rel_list.cc (release_list): Likewise.
+	* src/fileiter.cc (sccs_file_iterator): Likewise.
+	* src/sccsfile.cc (sccs_file::sccs_file): Likewise.
+	* src/sf-get2.cc (sccs_file::get): Likewise.
+	* src/sf-delta.cc (sccs_file::add_delta): Likewise.
+	* src/sf-admin.cc (sccs_file::admin): Likewise.
+	(sccs_file::create): Likewise.
+	* src/sf-cdc.cc (process_mrs): Likewise.
+	(sccs_file::cdc): Likewise.
+	* src/admin.cc (main): Likewise.
+
+	Remove mylist<T>::select(size_type).
+	* src/mylist.h (mylist): remove mylist<T>::select().
+	* unit-tests/test_mylist.cc: remove tests for mylist<T>::select().
+
+	Remove mylist<T>::operator=(void*).
+	* src/mylist.h (mylist): remove mylist<T>::operator=(void*).  The
+	effect of this method was to clear the list, so add a clear()
+	method instead, for closer matching to std::vector.n
+	* unit-tests/test_mylist.cc: remove tests for
+	mylist<T>::operator=(void*).
+
+	* src/sf-admin.cc (sccs_file::admin): use clear() to clear an
+	instance of mylist<T>, not assignment to NULL.
+
+	Remove mylist<T>::length().
+	* src/mylist.h (mylist::length): delete this method (size() should
+	be used instead).
+
+	Avoid using mylist<T>::length().
+	* src/sf-get2.cc (get): Use a range-based for loop instead of
+	indexing up to mylist<T>::length().
+	* src/sf-cdc.cc (cdc): Use mylist<T>::empty() rather than
+	comparing the result of length() against 0.
+	* src/sf-get3.cc (authorised): Use a range-based for loop instead
+	of indexing up to mylist<T>::length().
+	* src/sf-prs.cc (print_seq_list): Prefer mylist::size() to
+	mylist::length().
+	(print_delta): Use mylist<T>::empty() rather than comparing the
+	result of length() against 0.
+	* src/fileiter.cc (next): Prefer mylist::size() to
+	mylist::length().
+	* src/sf-admin.cc (sccs_file): Likewise.
+	* src/sf-val.cc (validate_seq_lists): Likewise, factoring repeated
+	code out into a new function, validate_seq_numbers.
+	* src/sf-rmdel.cc (is_seqlist_member): use std::find instead of
+	iterating over list members ourselves.
+	* src/sf-prt.cc (print_seq_list): use a range-based for loop
+	rather than iterating over the indexes in a mylist<seq_no>.
+	(sccs_file): Instead of checking mylist<T>::length() against 0,
+	use the empty() method.
+
+2016-02-20  James Youngman  <jay@gnu.org>
+
+	Prefer mylist::size() to mylist::length().
+	* unit-tests/test_delta.cc: Don't use mylist::length().
+	* unit-tests/test_bigfile.cc (emit_comments_or_mrs): Don't use
+	mylist::length().
+
+	Prefer mylist::size() to mylist::length().
+	* unit-tests/test_mylist.cc: Use the size() method instead of the
+	length() method, for better compatibility with (and so simpler
+	transition to) std::vector.
+
+	Avoid bash-specific [[...]].
+	* build-aux/check-googletest-files.sh (findproblems): Avoid
+	[[...]] since that is a Bash feature, and this is a /bin/sh
+	script.
+
+	Add a menu for "admin", correcting a Texinfo build failure.
+	* docs/cssc.texi: Updated copyright years.
+	(admin): Added a menu for the sections relating to "admin".
+
+2016-02-09  James Youngman  <jay@gnu.org>
+
+	* src/sf-prs.cc (print_seq_list): Use a range-based for loop for
+	iterating over sequence numbers.
+	* src/sf-val.cc (validate_seq_lists): Factor out the repeated
+	logic into a local function, validate_seq_numbers.
+	* src/sf-get2.cc (get): Use a range-based for loop for iterating
+	over the comments.
+
+2016-02-08  James Youngman  <jay@gnu.org>
+
+	Don't gratuitously count elements of mylist<T>.
+	* src/sf-admin.cc (create): Prefer !mylist<T>::empty() over
+	mylist<T>::length() != 0.
+
+	Use range-based for in get.cc.
+	* src/get.cc (print_id_list): Use a range-based for loop to print
+	a sid list.
+
+	Use range-based for loops in the release_list implementation.
+	* src/rel_list.cc (member): Search with std::find, rather
+	than coding it manually.
+	(print): Use a range-based for loop.
+
+	Use mylist<T>::size() in preference to .length().
+	* src/sf-get.cc (prepare_seqstate_1): Use the size() method of
+	mylist, instead of length(), for better std::vector
+	compatibility.
+
+	Use range-based for loops in print_seqs and sccs_file::write.
+	* src/sf-write.cc (print_seqs): Iterate over sequence numbers with
+	a range-based for loop.
+	(sccs_file::write): Iterate over users with a range-based for loop.
+	(sccs_file::write): Iterate over comments with a range-based for
+	loop.
+
+	Support and used range-based for for release_list instances.
+	* src/rl-merge.cc (merge): Use a range-based for loop to iterate
+	over release_list instances.
+	(remove): Likewise.
+	* src/rel_list.h (release_list): Implement begin() and end() and
+	empty().
+
+	Use a range-based for loop for iterating over deltas.
+	* src/sf-get.cc (prepare_seqstate_1): Use a range-based for loop
+	for iterating over included/excluded/ignored deltas.
+
+	sccs_delta: Use empty() to find out if a mylist is empty.
+	* src/delta.h: use mylist<T>.empty() instead of .length() == 0.
+
+	Implement mylist<T>::push_back.
+	* src/mylist.h (mylist): Implement a push_back method and add TODO
+	comments for methods which aren't shared by std::vector.
+
+	State that a C++11 compiler is needed.
+	* README: Mention the need for a C++11 capable compiler.
+	* NEWS: Likewise.
+
+	Store MRs as std::vector<std::string> (not mylist<std::string>).
+	* unit-tests/test_bigfile.cc: (emit_comments_or_mrs): Convert to a
+	template so that we can use it to print a std::vector<std::string>
+	or a mylist<std::string>.
+	(emit_delta): Pass MRs as a vector not a mylist.
+	(make_delta): Likewise.
+	* unit-tests/test_delta-table.cc: Update to take account of the
+	change in representation of MR lists from mylist<std::string> to
+	std::vector<std::string>.
+	* unit-tests/test_delta.cc: Likewise.
+	* src/sf-write.cc (write_delta): Change the way we loop over the
+	MRs and the comments to use a range-based for loop (hence
+	accomodating the change in type of the MR list.
+	* src/sf-prt.cc (print_string_list): Convert this function to a
+	template so that it can be used to print a
+	std::vector<std::string> or a mylist<std::string>.
+	* src/sf-prs.cc (print_string_list): Add an override of
+	print_string_list for printing an instance of const
+	std::vector<std::string>&.
+	* src/sf-delta.cc (sccs_file::add_delta): Update the type of the
+	mrs parameter to std::vector<std::string>.
+	* src/sf-cdc.cc (process_mrs): Update the parameter list to use
+	std::vector<std::string> instead of mylist<std::string>.  Change
+	the type of the to_delete parameter to const
+	std::unordered_set<std::string>& for greater efficiency.
+	* src/sf-admin.cc (sccs_file::create): Update type of mrs
+	parameter.
+	* src/sccsfile.h (sccs_file::check_mrs): Update the type of the
+	mrs parameter to std::vector<std::string>&.
+	(sccs_file::admin): update type of the mrs parameter.
+	(sccs_file::create): Likewise.
+	(::split_mrs): Likewise.
+	* src/sf-chkmr.h (check_mrs): Update the type of the mrs
+	parameter.
+	* src/run.cc (run): Update to take a vector<const char*> instead
+	of a mylist<const char*>.
+	(run_mr_checker): Change the type of the mrs parameter from
+	mylist<std::string> to std::vector<std::string>.
+	* src/run.h: Update declarations accordingly.
+	* src/mylist.h (mylist): Add method size() and empty() for
+	consistency with std::vector<T> so that we can define template
+	functions which will act on a mylist or a std::vector.
+	* src/l-split.cc (split_mrs): represent MRs as
+	std::vector<std::string>.
+	* src/delta.h (class delta): Change type of mrs_ member from
+	mylist<std::string> to std::vector<std::string>.
+	(delta::delta): change constructor parameters similarly.
+	(delta::mrs()): now returns std::vector<std::string>.
+	* src/admin.cc (main): Change type of mr_list from
+	mylist<std::string> to std::vector<std::string>.
+	* src/cdc.cc (main): Likewise.
+	* src/delta.cc (delta_main): Likewise.
+	(main): Simplify.
+
+2016-02-07  James Youngman  <jay@gnu.org>
+
+	Use std::string rather than mystring.
+	We also use range-based for loops to iterate over instances of
+	mylist<std::string>.
+	* src/mystring.h: Delete this file.
+	* src/Makefile.am (noinst_HEADERS): Remove mystring.h.
+	* src/admin.cc (main): Update to use string rather than mystring.
+	* src/cdc.cc: Likewise.
+	* src/canonify.cc (get_current_directory): Update to return string
+	* src/cssc.h: Likewise.
+	* src/delta.cc: Likewise.
+	* src/delta.h: Likewise.
+	* src/file.cc: Likewise.
+	* src/file.h: Likewise.
+	* src/file.h: Update function parameters and return types to be string rather than mystring.
+	* src/filediff.cc: Likewise.
+	* src/filediff.h: Likewise.
+	* src/fileiter.cc: Likewise.
+	* src/fileiter.h: Likewise.
+	* src/filelock.h: Likewise.
+	* src/fnsplit.cc: Likewise.
+	* src/get.cc: Likewise.
+	* src/l-split.cc: Likewise.
+	* src/pfile.h: Likewise.
+	* src/pf-del.cc: Likewise.
+	* src/prompt.cc: Likewise.
+	* src/prs.cc: Likewise.
+	* src/run.cc: Likewise.
+	* src/run.h: Likewise.
+	* src/sccsdate.h (sccs_date::as_string()): Likewise.
+	* src/sccsfile.cc: Likewise.
+	* src/sccsfile.h: Likewise.
+	* src/sccsname.cc: Likewise.
+	* src/sccsname.h (sccs_name): Likewise (and attributes).
+	* src/sf-admin.h: Likewise.
+	* src/sf-cdc.cc: Likewise.
+	* src/sf-chkmr.h (check_mrs): Likewise.
+	* src/sf-delta.cc: Likewise.
+	* src/sf-get.cc (get): Likewise.
+	* src/sf-get2.cc: Likewise.
+	* src/sf-get3.cc (authorised): Use string instead of mystring.
+	* src/sf-prs.cc: Likewise.
+	* src/sf-prt.cc: Likewise.
+	* src/sf-val.cc: Likewise.
+	* src/sf-write.cc: Likewise.
+	* src/sid.h (class sid): the as_string method now returns a string instead of a mystring.
+	* src/sid.cc: Use string instead of mystring.
+	* src/unget.cc: Likewise.
+	* src/writesubst.cc: Likewise.
+	* unit-tests/test_delta-table.cc: Likewise.
+	* unit-tests/test_delta.cc: Likewise.
+	* unit-tests/test_bigfile.cc: Use std::string instead of
+	mystring.
+	* src/mylist.h (mylist): Provide begin() and end() methods.
+
+	Delete myset.h, and switch to using std::set instead.  Use C++11.
+	* src/sccsfile.h (substitued_flag_letters): change from
+	myset<char> to std::set<char>.
+	* src/sccsfile.cc (set_expanded_keyword_flag): update
+	implementation now that substitued_flag_letters is std::set<char>.
+	(print_subsituted_flags_list): Likewise.
+	* src/sf-write.cc (write): Likewise.
+	* src/writesubst.cc (expand_keyletter): Likewise.
+	* src/sf-admin.cc (admin): Likewise.
+	* src/sf-prt.cc (prt): Likewise.
+	* src/sf-val.cc (validate): Likewise, using a range-based for
+	loop.
+	* bootstrap.conf (gnulib_modules): Add std-gnu11 (to compile
+	C++11).
+	* src/mylist.h (mylist): Add constructor from const std::set<TYPE>&.
+	* unit-tests/Makefile.am (unit_tests): Remove test_myset.
+	(test_myset_SOURCES): Remove.
+	* src/Makefile.am (noinst_HEADERS): Remove myset.h.
+	* myset.h: delete this file.
+	* unit-tests/test_myselt.cc: delete this file.
+	* src/delta.h (delta): included and excluded deltas are now
+	std::set<seq_no> rather than myset<seq_no>.
+	* unit-tests/test_delta.cc (DeltaTest::Constructor): Update the
+	call to the constructor of delta, to pass in std::set<seqno> for
+	the included and excluded deltas.
+	* src/sf-delta.cc (add_delta): Switch from using myset<seq_no> to
+	using std::set<seq_no> for the included and excluded deltas.
+
+	Remove obsolete code from mylist.h.
+	* src/mylist.h (mylist): Remove the obsolete implementation of
+	mylist (which was disabled via the preprocessor anyway).
+
+	Mention that gnulib has been updated.
+	* NEWS: mention this.
+
+2014-09-08  James Youngman  <jay@gnu.org>
+
+	Always include config.h first; eliminate some compiler warnings.
+	* auxfiles/firstinclude.sed: New.  Script which determines what
+	the first file #included in a C/C++ source file is.
+	* auxfiles/Makefile.am (EXTRA_DIST): Distribute firstinclude.sed.
+	* src/Makefile.am (check-include-order): Check that each source
+	file includes <config.h> before any other include file.
+	* src/admin.cc: Inlude <config.h> first.  Include system headers
+	before our own headers.
+	* src/bodyio.cc: Likewise.
+	* src/cap.cc: Likewise.
+	* src/cdc.cc: Likewise.
+	* src/delta-iterator.cc: Likewise.
+	* src/delta-table.cc: Likewise.
+	* src/delta.cc: Likewise.
+	* src/dtbl-prepend.cc: Likewise.
+	* src/encoding.cc: Likewise.
+	* src/environment.cc: Likewise.
+	* src/fatalsig.cc: Likewise.
+	* src/fdclosed.cc: Likewise.
+	* src/fnsplit.cc: Likewise.
+	* src/l-split.cc: Likewise.
+	* src/linebuf.cc: Likewise.
+	* src/get.cc: Likewise.
+	* src/pf-add.cc: Likewise.
+	* src/pfile.cc: Likewise.
+	* src/prompt.cc: Likewise.
+	* src/prs.cc: Likewise.
+	* src/prt.cc: Likewise.
+	* src/quit.cc: Likewise.
+	* src/rel_list.cc: Likewise.
+	* src/rmdel.cc: Likewise.
+	* src/run.cc: Likewise.
+	* src/sact.cc: Likewise.
+	* src/sccs-delta.cc: Likewise.
+	* src/rl-merge.cc: Likewise.
+	* src/sccsdate.cc: Likewise.
+	* src/sccsfile.cc: Likewise.
+	* src/sccsname.cc: Likewise.
+	* src/seqstate.cc: Likewise.
+	* src/sf-add.cc: Likewise.
+	* src/sf-admin.cc: Likewise.
+	* src/sf-cdc.cc: Likewise.
+	* src/sf-chkid.cc: Likewise.
+	* src/sf-delta.cc: Likewise.
+	* src/sf-get.cc: Likewise.
+	* src/sf-get2.cc: Likewise.
+	* src/sf-get3.cc: Likewise.
+	* src/sf-kw.cc: Likewise.
+	* src/sf-prs.cc: Likewise.
+	* src/sf-prt.cc: Likewise.
+	* src/sf-rmdel.cc: Likewise.
+	* src/sf-write.cc: Likewise.
+	* src/sid.cc: Likewise.
+	* src/sf-val.cc: Likewise.
+	* src/unget.cc: Likewise.
+	* src/val.cc: Likewise.
+	* src/writesubst.cc: Likewise.
+	* src/file.cc: Likewise.  Also move the definition of unprivileged
+	out of the #if in order to avoid a compiler warning.
+	* src/file.h: #include "mystring.h" since we use that class in
+	this header.
+	* src/filelock.h: Likewise.
+
+2014-07-28  James Youngman  <jay@gnu.org>
+
+	Support executable history files (=> g-files executable on get).
+	* src/sf-admin.cc (create): Open any file specified with the -i
+	command-line option before calling start_update, and using the
+	open file pointer, call set_sfile_executable if the history file
+	should be created with execute bits set.
+	* src/sf-write.cc (start_update): Use sfile_should_be_executable
+	rather than flags.executable in order to decide whether the
+	updated history file should be executable.
+	* NEWS: Mention that the 'x' flag no longer determines the mode of
+	the updated history file.
+	* src/sccsfile.h (sfile_executable): new boolean member variable.
+	If true, the history file, when we create it, should be
+	executable.
+	(set_sfile_executable): setter for sfile_executable.
+	(sfile_should_be_executable): getter for sfile_executable.
+	(gfile_should_be_executable): new method; when true, the gotten
+	file should be executable.
+	* src/sccsfile.cc (sccs_file): Point out that setting the 'x' flag
+	is not the most portable way to make gotten files executable.
+	(set_sfile_executable): Implement (sets the sfile_executable
+	member variable).
+	(gfile_should_be_executable): Implement (when this method returns
+	true, the gotten file should be executable).
+	(sfile_should_be_executable): Implement (when this method returns
+	true, the (updated) history file should be executable).
+	(sccs_file): If the history file is executable, remember this so
+	that the gotten file is created with the relevant execute bits
+	set.
+	* src/get.cc (main): The gotten file should be executable if
+	sccs_file::gfile_should_be_executable() returns true (that is, if
+	either the 'x' flag is set or the history file is executable).
+	* src/sf-delta.cc (add_delta): When greating gotten files (for
+	diffing) use gfile_should_be_executable rather than
+	flags.executable.
+	* docs/cssc.texi (Executable File Support): Document the fact that
+	the execute bits of the history file's mode are now copied to the
+	gotten file's mode (subject to umask) and in the reverse direction
+	in the case of admin -i.
+	(admin): Document the same behaviour.
+	(Flags): Mention the mode of the history file as an alternative to
+	setting the 'x' flag.
+	(SCCS Version Differences): Mention this behaviour (which follows
+	Solaris) for admin and get.
+	(Data Keywords): Add missing comma after @xref.
+	* tests/admin/executable.sh: New test file; verifies that the
+	execute bits of the file offered via admin -i are copied to the
+	history file.  Verify that setting the 'x' flag cuases the g-file
+	to be created executable, and that not setting it does not (when
+	the history file is not executable).  Verify that the history file
+	can still be set as executable when the initial body is presented
+	on stdin.
+	* tests/common/test-common (docommand): pass through the exit
+	status of the child command.  Log the return value, stdout and
+	stderr in command.log.
+	* src/file.cc (get_mode_bits): New function; Factors stat call out
+	of is_writable.
+	(get_open_file_xbits): New function; populate an output flag as
+	true IFF the FILE* argument is open on a file which has an execute
+	bit set.
+	* src/file.h: Declare get_open_file_xbits.
+	* tests/get/executable.sh: New test file; verify that the
+	executable bit is copied from the history file to the gotten
+	file.
+
+	Process test files in a consistent order for a case where this matters.
+	* tests/get/middle-fail.sh (e3): List the history files explicitly
+	so that we know that SCCS/s.b is definitely the second file of
+	three processed.
+
+	Show the label of the test command in the command.log file.
+	* tests/common/test-common (docommand): Show the label for the
+	current command in command.log.
+	(do_output): Likewise
+
+	Update version number.
+	* configure.ac: Move on from version 1.4.0.
+	* NEWS: Add a new section for changes in CSSC-1.4.1-rc1.
+
+2014-07-11  James Youngman  <jay@gnu.org>
+
+	Release CSSC-1.4.0.
+	* configure.ac (AC_INIT): Update the version number.
+	* NEWS: Describe the new release.
+
+2014-06-30  James Youngman  <jay@gnu.org>
+
+	Release CSSC-1.3.2.
+	* configure.ac: Change version number to 1.3.2.
+	* NEWS: Update the version number of the first section.
+
+	Update googletest unit test framework from r424 to r690.
+	* gl/lib/.gitignore: Add the files generated by the pthread module
+	(since we now depend on that).
+	* bootstrap.conf (bootstrap_epilogue): Upgrade from r424 to r690
+	of the googletest test framework.
+	(buildreq): Update tool versions to the ones I'm actually using
+	now, since these are really the only tools I test with routinely.
+	(gnulib_modules): Depend on the pthread module.  Download
+	googletest before we run gnulib-tool (instead of in the epilogue),
+	so that the googletest/m4 directory is available to autoconf.
+	* configure.ac: Include the googletest m4 library,
+	unit-tests/googletest/m4.  Turn on the Automake option 'tar-ustar'
+	which switches the dist file format from v7 Unix to the selects
+	the ustar format defined by POSIX 1003.1-1988.  We need to do this
+	since the distribution now contains path names longer than 99
+	characters and the v7 format (or its consumers) cannot reliably
+	deal with this.  Also make explicit some of the options which in
+	any case are implied by the "gnits" option, since we would want to
+	keep them even if turning off gnits.  Add configure tests required
+	by the googletest framework.
+
+	* NEWS: Point out the change of tar file format used for the
+	distribution file.  Also mention the recent updates to googletest
+	and gnulib.
+	* unit-tests/Makefile.am: Update the build rules used to build the
+	googletest unit test framework.  Don't build the samples.  Build
+	libgtest by compiling individual source files, instead of only
+	libgtest-all.cc (this fixes a problem in which "make distcheck"
+	would otherwise fail due to dependency rule files being left
+	around.  Also, don't compile the sample programs.  Remove the
+	rules for fusing the sources.  We don't use them, and the rules
+	themselves are still available in googletest/Makefile.am.
+	* Makefile.am (ACLOCAL_AMFLAGS): Include the googletest m4
+	library.
+	(distcheck-hook): Call build-aux/check-googletest-files.sh
+	(this is described below).
+	* build-aux/check-googletest-files.sh: New script; verifies that
+	all the files for the "googletest" C++ Unit test framework are
+	included in the distribution.  This script is called from
+	distcheck-hook.
+	* .gitignore: Don't ignore build-aux.
+
+2014-06-22  James Youngman  <jay@gnu.org>
+
+	Update gnulib.
+	* bootstrap: Update from current gnulib.
+	* bootstrap.conf: Remove second (and wrong) --tests-base
+	argument.  Don't munge include paths in gl/tests/Makefile.am
+	(since now, doing that breaks the build and whatever made it
+	necessary before no longer does).
+	* src/canonify.cc: Include <config.h> before (gnulib's replacement
+	of) <unistd.h>.
+
+	* src/file.h: Include <sys/types.h> for gid_t.
+
+2013-04-20  James Youngman  <jay@gnu.org>
+
+	Typo fix.
+	* COPYING.bsd: Fix typo 'modifiactions'.
+
+2011-11-19  James Youngman  <jay@gnu.org>
+
+	Fix Savannah bug #33633 (coredump in prs -d:GB:)
+	* src/sf-prs.cc (sccs_file::get): pass in the correct delta
+	information for keyword expansion instead of a blank (that is,
+	invalid) delta.  This fixes Savannah bug #33633.
+	* tests/prs/sv33633.sh: New file, test for this bug.
+	* tests/prs/s.sv33633.txt: Test input for the new test.
+	* NEWS: Mention this bug fix.
+
+2011-05-22  James Youngman  <jay@gnu.org>
+
+	Add unit test for cssc_linebuf.
+	* unit-tests/Makefile.am (unit_tests): Add test_linebuf.
+	(test_linebuf_SOURCES): Build test_linebuf.
+	* unit-tests/test_linebuf.cc: New unit test file.
+
+2011-05-21  James Youngman  <jay@gnu.org>
+
+	Print clearer test labels.
+	* tests/common/test-common (docommand): Print the test directory
+	and the test script as part of the label of each test, for
+	additional clarity and because many of them are actually not
+	unique.
+	* tests/get/sf111140.sh (label_prefix): Print qualified labels (as
+	for docommand).
+
+	Source the command-names script only once per test script.
+	* tests/common/real-thing: Instead of sourcing the command-names
+	script unconditionally, just complain if it was not already
+	sourced.
+	* tests/common/command-names: Error out if the command-names
+	script is sourced twice.
+	* tests/common/config-data: Don't source the command-names script
+	more than once.
+	* tests/common/need-prt: Likewise.
+
+	* tests/Makefile.am (test-*): Indicate the full path of each test
+	script.
+
+	Set TZ=GMT in the y2k tests.
+	* tests/year-2000/ext.sh: Set $TZ to GMT in order to make it
+	possible for implementations which convert SCCS file dates to
+	time_t values (but which otherwise have no bugs) to pass the
+	tests.
+	* tests/year-2000/prs-y2k.sh: Likewise.
+
+	Remove spurious space in definition of admin.
+	* tests/common/command-names (admin): remove spurious space.
+
+	Move on from release 1.3.1.
+	* configure.ac: Update version number to 1.3.2-git, to indicate
+	that compiled versions of this code are no longer identical to the
+	1.3.1 release.
+	* NEWS: Likewise.
+
+2011-05-10  James Youngman  <jay@gnu.org>
+
+	Release version 1.3.1.
+	* NEWS: Update version number to 1.3.1.
+	* configure.ac: Likewise.
+
+	Check we distributed all the tests.  Remove redundant Makefile.am files.
+	* auxfiles/check-testfiles.sh: New script (copied from GNU
+	findutils e66802375963941b3b54a0e038d18eccde449e14 with some
+	adaptations for CSSC) for checking that we installed all the test
+	scripts in "make dist".
+	* tests/Makefile.am (dist-hook): Invoke the
+	auxfiles/check-testfiles.sh script.
+	* tests/common/Makefile.am: remove unreferenced file;
+	tests/Makefile.am does not recurse.
+	* tests/delta/Makefile.am, tests/prs/Makefile.am: Likewise.
+	* tests/prt/Makefile.am, tests/sact/Makefile.am: Likewise.
+	* tests/admin/Makefile.am, tests/unget/Makefile.am: Likewise.
+	* tests/val/Makefile.am, tests/what/Makefile.am: Likewise.
+
+2011-05-03  James Youngman  <jay@gnu.org>
+
+	Modify "prs -d :DI:" to print ignored deltas.
+	* tests/prs/delta_ixg.sh: New test script for "prs -d :DI:".
+	* tests/prs/s.delta_ixg: New test input file for delta_ixg.sh.
+	* src/sf-prs.cc (print_delta): For :DI:, also print ignored
+	deltas.  Follow the conventions of OpenSolaris 2009.06 on the
+	question of how many slashes to produce.
+	* docs/cssc.texi (Data Keywords): Describe in more detail just how
+	the keyword :DI: is expanded.
+	(SCCS Version Differences): Explain how the expansion of :DI:
+	varies across implementations.
+	* NEWS: Mention this change.
+
+2011-04-30  James Youngman  <jay@gnu.org>
+
+	Accept entirely empty comment lines (lacking the initial space).
+	* src/sccsfile.cc (read_delta): Accept comment lines containing
+	nothing at all (not even a space after the 'c').  Some historis
+	versions of SCCS seem to have produced these, and later versions
+	tolerate it.
+
+	Fix Savannah bug bug #33153: "prs" includes "AUTO NULL DELTA"s.
+	* src/prs.cc (main): Change type of all_deltas from int to bool.
+	(main): Move detection of errors writing to stdout to here,
+	instead of sccs_file::prs().  Likewise diagnosis of the fact that
+	no deltas were matched.
+	* src/sf-prs.cc (prs): Add an output parameter, "matched", which
+	is set if any delta was matched (and printed).
+	(prs): Rewrite this method to evaluate the earlier/later cutoff in
+	terms of SIDs where this is necessary.  That is, avoid the
+	assumption that different SIDs have different timestamps.
+	* src/sccsfile.h (sccs_file::prs): Modify the declaration
+	of sccs_file::prs() to add the output parameter, "matched".
+	* tests/prs/sv33153.sh: New test.
+	* tests/prs/s.sv33153: New test input file.
+	* NEWS: Mention this bugfix.
+
+2011-04-29  James Youngman  <jay@gnu.org>
+
+	* testutils/mogrify.awk: Preserve comment lines which have no
+	space (that is, \001Ac\n).
+
+2011-04-26  James Youngman  <jay@gnu.org>
+
+	Fix some minor issues identified by 'make syntax-check'.
+	* testutils/uu_decode.c: avoid including unnecessary header
+	<stddef.h>.
+	* src/sf-delta.cc (add_delta): Remove doubled word in a comment.
+	* docs/cssc.texi (Other Variables): Remove doubled word.
+	(Year 2000 Summary): Likewise.
+	* cfg.mk: Modify spelling of a comment in order not to have a
+	false positive from the sc_makefile_at_at_check syntax check.
+	* tests/year-2000/ext.sh: Remove blank line at the end of the
+	file.
+	* tests/year-2000/prs-y2k.sh: Likewise.
+	* .x-sc_unmarked_diagnostics: Likewise.
+	* unit-tests/testwrapper.sh.in: Add final newline.
+	* README-hacking: Remove space-tab combinations.
+
+	Update hacking instructions to explain the git submodule.
+	* README-hacking: Update instructions detailing how to collect
+	gnulib (since we now use it as a submodule).
+
+	Update gnulib.
+	* gnulib: update to current HEAD.
+
+	Various minor fixes suggested by 'make syntax-check'.
+	* docs/.ispell_english: Remove blank line from end of document.
+	* src/Makefile.am: Remove blank space from end of line.
+	* src/file.cc (atomic_nfs_create): Likewise.
+	* src/sf-prs.cc (prs): Likewise.
+	* testutils/lndir.c: Likewise.
+
+	Change output order in "sccs unedit" to match OpenSolaris.
+	* tests/bsd-sccs/driver-basic.sh (h1): Modify the ordering of the
+	expected ouput to match OpenSolaris 2009.06.
+	* src/sccs.c (command): For the UNEDIT case, flush stdout before
+	invoking 'get' in order to pass the changed test.
+	* NEWS: Mention this change.
+
+2011-04-25  James Youngman  <jay@gnu.org>
+
+	Allow non-CSSC implementations to XFAIL for tricky dates.
+	* tests/year-2000/prs-y2k.sh: Divide tests into "easy" (which any
+	y2k-compliant version of SCCS must pass) and "harder" (which
+	require correct implementation of the windowing scheme and correct
+	conversion of dates at the limits of a 32-bit time_t).  Require
+	CSSC to pass all tests, but allow other implementations to XFAIL
+	on the hader tests.
+	* tests/year-2000/ext.sh: Correct the mechanism by which we figure
+	out if we are testing CSSC itself.
+	* tests/common/test-common (fail): return false on XFAIL.
+
+	Move source and documentation out of bsd/ into src/ and docs/.
+	* COPYING.bsd: Move from bsd/COPYING.bsd.
+	* bsd/sccs.1: move to docs/sccs.1
+	* bsd/sccs.c: move to src/sccs.c
+	* tests/common/command-names: Locate the sccs binary in its new
+	location.
+	* src/Makefile.am (generic_CPPFLAGS): Put preprocessor flags here
+	so that AM_CPPFLAGS and AM_CFLAGS can both refer to it, now that
+	we have both C and C++ sources in this directory.
+	(LDADD): Link against gnulib.
+	(AM_CFLAGS): #define PREFIX for the benefit of sccs.c.
+	(AM_INSTALLCHECK_STD_OPTIONS_EXEMPT): Exempt the binaries from the
+	gnits install check which requires them to support --version and
+	--help.
+	* AUTHORS: Mention the new location of the COPYING.bsd file.
+	* THANKS: Point to COPYING.bsd in its new location.
+	* docs/.ispell_english: Incorporate contents of bsd/.ispell_english.
+	* docs/Makefile.am: Add sccs.1 and sccs.me.
+	* bsd/.ispell_english, bad/Makefile.am, bsd/Makefile.bsd: Delete.
+	* bsd/sccs.me: move to docs/sccs.me
+	* configure.ac: refer to src/sccs.c instead of bsd/sccs.c
+	* Makefile.am (SUBDIRS): Remove bsd from SUBDIRS.
+	* README: sccs no longer lives in bsd/sccs.
+
+	Allow an empty MR list to be passed to admin.
+	* tests/admin/init-mr.sh: Don't expect "admin -m" to interpret
+	a plain "-m" as meaning an empty MR list.  Distinguishing the
+	absence of an argument to -m requires a traditional SCCS argument
+	processor, and this behaviour is incompatible with modern
+	implementations of SCCS (for example OpenSolaris).
+	* tests/admin/flags.sh: Likewise.
+	* src/admin.cc (main): Allow an empty list of MRs to be specified
+	to admin, for example "admin -fv -m' '".  OpenSolaris allows
+	this, and we can no longer use the previous method which was to
+	omit the optional argument.  Elminiate doubled space in error
+	message.
+	* docs/cssc.texi (admin): document this clearly.
+	* NEWS: mention this change.
+
+	Fix delta summary; when it goes to stdout, send other to stderr.
+	* tests/get/delta-summary.sh: OpenSolaris get emits the delta
+	summary (produced by get -L) to stdout and the SID of the gotten
+	delta and the number of body lines to stderr.  Expect this
+	behaviour.
+	* tests/get/delta-summary.sh (L2e): Check that the "new delta"
+	message also goes to stderr when we are using "get -e -L" (since
+	the delta summary goes to stdout).
+	* src/get.cc (print_id_list): New parameter, fp: the file handle
+	to print the IDs to.
+	(main): rename use_stdout to send_body_to_stdout (being a more
+	accurate description).
+	(main): add variable commentary, the file descriptor on which we
+	announce which delta we're getting and so forth.   This is usually
+	stdout, but if stdout needs to be used for something else (for
+	example the delta summary), commentary can be set to stderr.
+	* src/sf-get2.cc (get): Correct the spacing before the items in
+	the delta summary.  Add a trailing newline.
+	* NEWS: Mention this change.
+
+	Produce better test diagnostics when a command unexpectedly fails.
+	* tests/common/test-common (docommand): when the return value is
+	zero, print any error message that had been issued on stderr.
+
+	Update sccsdiff to work like sccsdiff on OpenSolaris.
+	* tests/sccsdiff/rap.sh: Update the tests to match the results we
+	actually get from sccsdiff on OpenSolaris.
+	* src/sccsdiff.sh.in: Update to pass the modified tests.
+	Specifically, use a different header for the case where -p is
+	specified and when it's not.
+	* NEWS: Mention this change.
+
+	Call ${admin} in test preparations, not "admin".
+	* tests/admin/y-flag.sh: when trying to deduce the properties of
+	the admin command we're testing, invoke ${admin} (i.e. the thing
+	we are testing) as opposed to "admin" (i.e. the system's
+	already-installed version).  Add extra checks to verify that the
+	right thing happened.
+
+	Avoid assuming Unix semantics for st_nlinks in lndir.
+	* testutils/lndir.c (quit): Accept errno argument; include the
+	error string in the error message if it is nonzero.  Call vmsg
+	instead of calling vfprintf directly.
+	(mperror): Accept the errno value as a function argument.
+	(vmsg): make a static function.
+	(dodir): Eliminate n_dirs subdirectory counter; this is unreliable
+	on filesystems which don't have Unix-like semantics for the
+	directory link count (for example, ISO9660 on Solaris, VirtualBox
+	shared folders on Solaris).  Also word error messages more
+	explicitly.
+
+	Avoid retrying link(2) when errno is set to ENOSYS.
+	* src/file.cc (atomic_nfs_create): If link(2) fails with ENOSYS,
+	there is no point in retrying.
+
+	Bugfix for lndir on OpenSolaris: ignore . and ..
+	* testutils/lndir.c (dodir): Ignore . and .. (on systems where
+	readdir returns them).
+
+2011-04-24  James Youngman  <jay@gnu.org>
+	Tell the user to run "bootstrap" instead of "autogen.sh".
+	* README: "autogen.sh" has been replaced by "bootstrap".
+
+	Adopt Automake's "gnits" rules.
+	* configure.ac: Use the "gnits" rules.
+	* docs/CREDITS: Rename to THANKS to comply with the gnits rules.
+	* docs/CREDITS.short.txt: Add missing final newline.
+
+	Modernise configure.ac initialisation.
+	* configure.ac: Use the new-style Autoconf/Automake initialisation
+	which passes the version number to AC_INIT rather than to
+	AM_INIT_AUTOMAKE.
+
+	Update the version number.
+	* configure.ac: Update version number to make a distinction
+	between the tar file which results form "make dist" and the
+	released 1.3.0 tar file.
+	* NEWS: Similarly update the version number.
+
+	Fix SF bug #1300722 (prs succeeds even if the SID is not found).
+	* tests/prs/wrongsid.sh: New file; tests for "prs -r" when the
+	specified SID does not exist.
+	* tests/prs/default.sh: New file; tests the default behaviour of
+	prs, both with -d and with no options at all.
+	* tests/prs/cutoff.sh: New file; tests for "prs -e" and "prs -l".
+	* src/prs.cc (main): Add a comment pointing out that specifying -d
+	changes the default behaviour around which deltas are selected.
+	* src/sf-prs.cc (prs): return a failure status if a SID was
+	specified but not matched.
+	* NEWS: mention this bugfix.
+
+2011-04-22  Yann Dirson  <dirson@debian.org>  (tiny change)
+
+	Fix SourceForge bug #1317916.
+	* bsd/sccs.1: Avoid a groff warning in sccs.1 by removing some
+	unnecessary blank lines.
+
+2010-11-07  James Youngman  <jay@gnu.org>
+
+	Prepare to release 1.3.0.
+	* configure.ac (AM_INIT_AUTOMAKE): Update the version number.
+	This release is otherwise identical to 1.3.0rc1.
+	* NEWS: Mention this.
+
+2010-05-16  James Youngman  <jay@gnu.org>
+
+	Prepare to release 1.3.0rc1.
+	* NEWS: Update version to 1.3.0rc1
+	* configure.ac: Update version to 1.3.0rc1
+	* docs/cssc.texi: Update VERSION, EDITION and last-update time.
+
+	Remove exceptions for now-deleted googletest/ files.
+	* .x-sc_prohibit_empty_lines_at_EOF: Remove exceptions for
+	nonexistent files.
+	* .x-sc_prohibit_magic_number_exit: Likewise.
+	* .x-sc_useless_cpp_parens: Likewise.
+	* .x-sc_the_the: Likewise.
+	* .x-sc_file_system: Likewise.
+	* .x-sc_m4_quote_check: Delete this file, since the only entry in
+	it has also been deleted.
+
+	Remove some trailing blanks.
+	* src/file.cc (create): Remove trailing blanks.
+
+	Distribute ChangeLog.2.
+	* Makefile.am (ACLOCAL_AMFLAGS): Set to -I m4 to avoid a warning.
+	(EXTRA_DIST): Add ChangeLog.2, which previously wasn't
+	distributed.
+
+	Don't use #pragma interface/implementation, they're not useful
+	with GCC 2.7.2+.
+	* src/quit.h, src/sccsdate.h, src/sccsname.h, src/sid_list.h,
+	src/filediff.h, src/fileiter.h, src/filelock.h: Don't use #pragma
+	interface.
+	* src/file.cc, src/fileiter.cc, src/linebuf.cc, src/my-getopt.cc,
+	src/my-getopt.h, src/quit.cc, src/sccsdate.cc, src/sccsname.cc,
+	src/sf-get.cc, src/sf-kw.cc: Don't use #pragma implementation.
+
+	Remove support for CONFIG_MSDOS_FILES and lock methods other than
+	CONFIG_PID_LOCKING.
+	* src/fileiter.cc (sccs_file_iterator): Remove support for
+	CONFIG_MSDOS_FILES.
+	* src/sysdep.h: Remove support for CONFIG_MSDOS_FILES.
+	* src/filelock.h (cleanup): Remove support for CONFIG_NO_LOCKING.
+	* src/file.cc (create): Remove support for CONFIG_MSDOS_FILES.
+	(create): Remove support for CONFIG_SHARE_LOCKING.
+	(do_lock): Remove support for CONFIG_SHARE_LOCKING.
+	* src/defaults.h: Remove support for types of locking other than
+	CONFIG_PID_LOCKING.  Remove support for CONFIG_MSDOS_FILES.
+	* src/file.h (enum create_mode): Likewise.
+
+	Generate config.h.in by running bootstrap.
+	* configure.ac: Call AC_CONFIG_HEADERS instead of the obsolete
+	AM_CONFIG_HEADERS.  This causes bootstrap to call autoheader,
+	which needs to happen for config.h.in to be generated.
+
+	Eliminate stack.h and the stack<T> template, since it is not used.
+	* unit-tests/Makefile.am (unit_tests): Remove test_stack.  Also
+	eliminate test_stack_SOURCES.
+	* src/seqstate.h: Don't include stack.h.
+	* src/stack.h: Remove.
+	* unit-tests/test_stack.cc: Remove.
+	* src/Makefile.am (noinst_HEADERS): Remove stack.h.
+
+2010-05-15  James Youngman  <jay@gnu.org>
+
+	Remove trailing blanks from most files.
+	* .x-sc_trailing_blank: Remove trailing-blank exceptions for most
+	files.
+	* Makefile.am, NEWS, README, auxfiles/CSSC.spec.in,
+	bsd/Makefile.bsd, bsd/sccs.1, bsd/sccs.c, configure.ac, docs/BUGS,
+	docs/CREDITS, docs/Makefile.am, docs/Platforms, docs/TODO,
+	docs/URLs, docs/cssc.texi, docs/mailing-list.txt, docs/style.txt,
+	docs/tests-todo.txt, gl/Makefile.am, sccs-cgi/sccs.cgi,
+	src/Makefile.am, src/admin.cc, src/bodyio.cc, src/bodyio.h,
+	src/canonify.cc, src/cap.cc, src/cdc.cc, src/cleanup.h,
+	src/cssc-assert.h, src/cssc.h, src/defaults.h,
+	src/delta-iterator.cc, src/delta-iterator.h, src/delta-table.cc,
+	src/delta-table.h, src/delta.cc, src/delta.h, src/dtbl-prepend.cc,
+	src/encoding.cc, src/environment.cc, src/except.h,
+	src/fatalsig.cc, src/fdclosed.cc, src/file.cc, src/file.h,
+	src/filediff.cc, src/filediff.h, src/fileiter.cc, src/fileiter.h,
+	src/filelock.h, src/filepos.h, src/fnsplit.cc, src/get.cc,
+	src/ioerr.h, src/l-split.cc, src/linebuf.cc, src/linebuf.h,
+	src/my-getopt.cc, src/my-getopt.h, src/mylist.h, src/myset.h,
+	src/mystring.h, src/pf-add.cc, src/pf-del.cc, src/pfile.cc,
+	src/pfile.h, src/prompt.cc, src/prs.cc, src/prt.cc, src/quit.cc,
+	src/quit.h, src/rel_list.cc, src/rel_list.h, src/release.h,
+	src/relvbr.h, src/rl-merge.cc, src/rmdel.cc, src/run.cc,
+	src/run.h, src/sact.cc, src/sccs-delta.cc, src/sccsdate.cc,
+	src/sccsdate.h, src/sccsdiff.sh.in, src/sccsfile.cc,
+	src/sccsfile.h, src/sccsname.cc, src/sccsname.h, src/seqstate.cc,
+	src/seqstate.h, src/sf-add.cc, src/sf-admin.cc, src/sf-cdc.cc,
+	src/sf-chkid.cc, src/sf-chkmr.h, src/sf-delta.cc, src/sf-get.cc,
+	src/sf-get2.cc, src/sf-get3.cc, src/sf-kw.cc, src/sf-prs.cc,
+	src/sf-prt.cc, src/sf-rmdel.cc, src/sf-val.cc, src/sf-write.cc,
+	src/showconfig.cc, src/sid.cc, src/sid.h, src/sid_list.h,
+	src/sl-merge.h, src/stack.h, src/sysdep.h, src/unget.cc,
+	src/val.cc, src/valcodes.h, src/version.h, src/what.cc,
+	src/writesubst.cc, testutils/compare_gets.sh,
+	testutils/condense-valgrind.pl, testutils/decompress_stdin.sh.in,
+	testutils/ekko.c, testutils/gcov-util.sh, testutils/last-time.c,
+	testutils/lndir.c, testutils/lndir.man, testutils/mogrify.awk,
+	testutils/realpwd.cc, testutils/seeker.c, testutils/user.c,
+	testutils/uu_decode.c, testutils/yammer.c, testutils/yes.c,
+	unit-tests/Makefile.am, unit-tests/get-gtest.sh,
+	unit-tests/test_bigfile.cc, unit-tests/test_delta-table.cc,
+	unit-tests/test_delta.cc, unit-tests/test_encoding.cc,
+	unit-tests/test_encoding2.cc, unit-tests/test_mylist.cc,
+	unit-tests/test_myset.cc, unit-tests/test_rel_list.cc,
+	unit-tests/test_release.cc, unit-tests/test_relvbr.cc,
+	unit-tests/test_sccsdate.cc, unit-tests/test_sid.cc,
+	unit-tests/test_sid_list.cc, unit-tests/test_stack.cc: Remove
+	trailing blanks.
+
+	Eliminate some syntax-check warnings.
+	* testutils/yes.c (main): Don't #define EXIT_FAILURE.
+	* docs/borrowed-files.txt: Remove trailing blanks.
+	* bsd/sccs.c: Don't define WEXITSTATUS, sys/wait.h does that.
+	* tests/common/command-names: Convert TABs to spaces to avoid
+	syntax-check warnings.
+
+2010-05-14  James Youngman  <jay@gnu.org>
+
+	Don't configure in unit-tests/googletest, it's gone.
+	* configure.ac: remove call to
+	AC_CONFIG_SUBDIRS(unit-tests/googletest).
+
+	Disable pthread support (since we don't use pthreads).
+	* unit-tests/Makefile.am (AM_CPPFLAGS): Pass -DGTEST_HAS_PTHREAD=0.
+	* configure.ac: Don't include
+	unit-tests/googletest/m4/acx_pthread.m4. Remove --with-pthreads.
+	* gl/lib/.gitignore: Remove gnulib.mk, dummy.c.
+
+	Update Google C++ Test Framework version at bootstrap time.
+	* bootstrap.conf (bootstrap_epilogue): call get-gtest.sh at
+	bootstrap time.
+
+	* unit-tests/get-gtest.sh: Use svn's --non-interactive option.
+
+	Configure and build googletest in our own configure/Makefile.
+	* unit-tests/Makefile.am: Build the Google C++ Testing Framework
+	code in this Makefile rather than forcing it to have its own
+	configure.
+	(EXTRA_DIST): Distribute the googletest copyright notice
+	etc. too.
+	(gtest_headers): List all the header files.
+	(libgtest_a_SOURCES): List the source files separately, and the
+	header files.
+	(libgtest_main_a_SOURCES): List the header files too.
+	* bootstrap.conf (bootstrap_epilogue): googletest now has no
+	separate configure step, so no need to bootstrap in that directory
+	either.
+	* unit-tests/get-gtest.sh: Script for checking out the google unit
+	test code.
+
+	Move googletest to unit-tests/googletest.
+	* unit-tests/Makefile.am (SUBDIRS): Recurse into googletest.
+	Update paths to liibgtest.la.
+	* bootstrap.conf (bootstrap_epilogue): bootstrap in uni-tests/googletest.
+	* configure.ac: Configure in unit-tests/googletest.
+	* Makefile.am (SUBDIRS): Remove googletest (since we moved it).
+	* googletest/*: move to unit-tests/googletest/.
+
+	Remove some redundant scripts and .cvsignore files.
+	* scripts/rev-freq.sh: Remove unused file.
+	* show-disp.sh: Remove unused file.
+	* scripts/change-suffix: Remove unused file.
+	* .cvsignore, auxfiles/.cvsignore, bsd/.cvsignore,
+	docs/.cvsignore, sccs-cgi/.cvsignore, tests/.cvsignore,
+	testutils/.cvsignore, unused/.cvsignore: Remove unused files.
+
+	Move CSSC source code to src/ subdirectory.
+	* configure.ac: move CSSC source to subdirectory src/.
+	* Makefile.am: rename to src/Makefile.am.  The remaining makefile
+	just sets SUBDIRS and EXTRA_DIST.
+	* admin.cc: moved to src/admin.cc
+	* bodyio.cc: moved to src/bodyio.cc
+	* bodyio.h: moved to src/bodyio.h
+	* canonify.cc: moved to src/canonify.cc
+	* cap.cc: moved to src/cap.cc
+	* cdc.cc: moved to src/cdc.cc
+	* cleanup.h: moved to src/cleanup.h
+	* cssc-assert.h: moved to src/cssc-assert.h
+	* cssc.h: moved to src/cssc.h
+	* defaults.h: moved to src/defaults.h
+	* delta-iterator.cc: moved to src/delta-iterator.cc
+	* delta-iterator.h: moved to src/delta-iterator.h
+	* delta-table.cc: moved to src/delta-table.cc
+	* delta-table.h: moved to src/delta-table.h
+	* delta.cc: moved to src/delta.cc
+	* delta.h: moved to src/delta.h
+	* dtbl-prepend.cc: moved to src/dtbl-prepend.cc
+	* encoding.cc: moved to src/encoding.cc
+	* environment.cc: moved to src/environment.cc
+	* except.h: moved to src/except.h
+	* fatalsig.cc: moved to src/fatalsig.cc
+	* fdclosed.cc: moved to src/fdclosed.cc
+	* file.cc: moved to src/file.cc
+	* file.h: moved to src/file.h
+	* filediff.cc: moved to src/filediff.cc
+	* filediff.h: moved to src/filediff.h
+	* fileiter.cc: moved to src/fileiter.cc
+	* fileiter.h: moved to src/fileiter.h
+	* filelock.h: moved to src/filelock.h
+	* filepos.h: moved to src/filepos.h
+	* fnsplit.cc: moved to src/fnsplit.cc
+	* get.cc: moved to src/get.cc
+	* ioerr.h: moved to src/ioerr.h
+	* l-split.cc: moved to src/l-split.cc
+	* linebuf.cc: moved to src/linebuf.cc
+	* linebuf.h: moved to src/linebuf.h
+	* my-getopt.cc: moved to src/my-getopt.cc
+	* my-getopt.h: moved to src/my-getopt.h
+	* mylist.h: moved to src/mylist.h
+	* myset.h: moved to src/myset.h
+	* mystring.h: moved to src/mystring.h
+	* pf-add.cc: moved to src/pf-add.cc
+	* pf-del.cc: moved to src/pf-del.cc
+	* pfile.cc: moved to src/pfile.cc
+	* pfile.h: moved to src/pfile.h
+	* prompt.cc: moved to src/prompt.cc
+	* prs.cc: moved to src/prs.cc
+	* prt.cc: moved to src/prt.cc
+	* quit.cc: moved to src/quit.cc
+	* quit.h: moved to src/quit.h
+	* rel_list.cc: moved to src/rel_list.cc
+	* rel_list.h: moved to src/rel_list.h
+	* release.h: moved to src/release.h
+	* relvbr.h: moved to src/relvbr.h
+	* rl-merge.cc: moved to src/rl-merge.cc
+	* rmdel.cc: moved to src/rmdel.cc
+	* run.cc: moved to src/run.cc
+	* run.h: moved to src/run.h
+	* sact.cc: moved to src/sact.cc
+	* sccs-delta.cc: moved to src/sccs-delta.cc
+	* sccsdate.cc: moved to src/sccsdate.cc
+	* sccsdate.h: moved to src/sccsdate.h
+	* sccsdiff.sh.in: moved to src/sccsdiff.sh.in
+	* sccsfile.cc: moved to src/sccsfile.cc
+	* sccsfile.h: moved to src/sccsfile.h
+	* sccsname.cc: moved to src/sccsname.cc
+	* sccsname.h: moved to src/sccsname.h
+	* seqstate.cc: moved to src/seqstate.cc
+	* seqstate.h: moved to src/seqstate.h
+	* sf-add.cc: moved to src/sf-add.cc
+	* sf-admin.cc: moved to src/sf-admin.cc
+	* sf-cdc.cc: moved to src/sf-cdc.cc
+	* sf-chkid.cc: moved to src/sf-chkid.cc
+	* sf-chkmr.h: moved to src/sf-chkmr.h
+	* sf-delta.cc: moved to src/sf-delta.cc
+	* sf-get.cc: moved to src/sf-get.cc
+	* sf-get2.cc: moved to src/sf-get2.cc
+	* sf-get3.cc: moved to src/sf-get3.cc
+	* sf-kw.cc: moved to src/sf-kw.cc
+	* sf-prs.cc: moved to src/sf-prs.cc
+	* sf-prt.cc: moved to src/sf-prt.cc
+	* sf-rmdel.cc: moved to src/sf-rmdel.cc
+	* sf-val.cc: moved to src/sf-val.cc
+	* sf-write.cc: moved to src/sf-write.cc
+	* showconfig.cc: moved to src/showconfig.cc
+	* sid.cc: moved to src/sid.cc
+	* sid.h: moved to src/sid.h
+	* sid_list.h: moved to src/sid_list.h
+	* sl-merge.h: moved to src/sl-merge.h
+	* stack.h: moved to src/stack.h
+	* sysdep.h: moved to src/sysdep.h
+	* unget.cc: moved to src/unget.cc
+	* val.cc: moved to src/val.cc
+	* valcodes.h: moved to src/valcodes.h
+	* version.cc.in: moved to src/version.cc.in
+	* version.h: moved to src/version.h
+	* what.cc: moved to src/what.cc
+	* writesubst.cc: moved to src/writesubst.cc
+	* unit-tests/Makefile.am (LDADD): Fix relative path
+	of libcssc.a.
+	(test_bigfile_LDADD): Likewise.
+	(AM_CPPFLAGS): Fix relative path to the include files.
+	* tests/common/command-names (dir): Update relative path to the binaries.
+	(sccsprog): Set a variable for the path to the sccs binary.
+	(sccs): Correct the sccs command (use ${sccsprog}).
+
+2010-05-13  James Youngman  <jay@gnu.org>
+
+	Fix some compiler warnigns about shadowing names or integer conversions.
+	* sf-delta.cc (add_delta): Rename some variables to avoid
+	shadowing class members or other local variables.n
+	* sf-prs.cc (get): Likewise.
+	(print_delta): Likewise.
+	(prs): Likewise.
+	* sf-cdc.cc (cdc): Rename parameters to avoid shadowing the names
+	of class members.
+	* sf-admin.cc (admin): Remove unused variable which was causing
+	shadowing warnings.
+	* sccsdate.cc (sccs_date): Avoid warning about implicit cast from
+	int to char, by using an explicit cast.
+	* linebuf.cc (read_line): Avoid a compiler warning: explicitly
+	cast the length parameter passed to fgets from size_t to int.
+	* fileiter.h (s): Correct the type of pos (it's in index into
+	mylist<mystring>, so use mylist<mystring>::size_type).
+	* cdc.cc (plural): Fix warning about type conversion in call to plural().
+	* fileiter.cc (sccs_file_iterator): Avoid shadowoing a class member.
+	* what.cc (xread): return ssize_t rather than int.
+	(main): store the result of xread in a ssize_t variable, not an int.
+
+	Fix more compiler warnings.
+	* sf-val.cc (validate_seq_lists): Use size_type for indexes into mylist,
+	not int.
+	(validate): Likewise.
+	* sf-prs.cc (print_seq_list): Likewise.
+	(print_string_list): Likewise.
+	* sf-cdc.cc (inlist): Likewise.
+	(process_mrs): Likewise.
+	(sccs_file::cdc): Likewise.
+	* sf-rmdel.cc (is_seqlist_member): Likewise.
+	* sf-prt.cc (print_string_list): Likewise.
+	(print_seq_list): Likewise.
+	* delta.cc (delta_main): Make static.
+	* sf-get2.cc (test_locks): Avoid shadowing a class member.
+	* get.cc (print_id_list): Use size_type for indexes into mylist,
+	not int.
+	* showconfig.cc: Include version.h for the declarations of
+	functions in this module.
+	* quit.cc (v_errormsg_with_errno): Make static; nobody else uses it.
+	* fnsplit.cc: Include file.h for declaration of split_filename,
+	since we define it in this file.
+	* sccsdate.cc (count_digits): Avoid casting argument of is_digit
+	to unsigned char, since is_digit takes a char.
+	* sid.cc (matches): Be more explicit about avoidingn signed overflow.
+
+	Fix warnings in file.cc.
+	* file.cc (maybe_wait_a_bit): Fix type of first parameter to avoid
+	a compiler warning.  Also type of argument to sleep.
+	(eaccess): Remove unused function.
+	(unlink_file_if_present): Remove unused function.
+	(create): Make this function static.
+
+	Fix some more compiler warnings.
+	* bodyio.cc (body_insert_binary): Explicitly qualify
+	::check_id_keywords as being in the global namespace.
+	* run.cc (operator+=): Change type of index variables to size_type
+	to fix a compiler warning.
+	(run_mr_checker): Likewise.
+	* sf-write.cc (print_seqs): Likewise.
+	(write_delta): Likewise.
+	(rehack_encoded_flag): Avoid shadowing the name of a class member.
+	* sccsfile.cc: Remove unused macro 'f'.
+	(strict_atoul_idu): Remove unused variable 'c'.
+	(read_line_param): Avoid shadowing the name of a class member.
+	* rel_list.h (class release_list): Define typedef size_type.
+	* rel_list.cc (member): Use size_type for index variables to avoid
+	(justified) compiler warnings.
+	(print): Likewise.
+	* fileiter.cc (sccs_file_iterator): Use size_t to represent the
+	result of strlen, not int.
+	* file.cc (is_writable): Make static, it's not used elsewhere.
+	(old_is_writable): Unused; remove.
+
+	* sf-chkid.cc (check_id_keywords): Assume we have memchr.  Avoid
+	possible access beyond the end of the string.
+	* sf-kw.cc (no_id_keywords): Avoid shadowing the name of a class
+	member.
+	(check_keywords_in_file): Likewise.
+	* l-split.cc: #include "sccsfile.h" to get declarations of the
+	functions in this file.
+
+	Fix or minimise some compiler warnings.
+	* sid_list.h (range_list): Avoid long-to-size_t compiler warning.
+	* encoding.cc (encode): Move the function definition here from
+	bodyio.h since it's only used in this file.
+	(decode): Likewise.
+	(decode_line): Be more explicit about casts between char and
+	size_t in order to avoid compiler warnings.
+	(encode_line): Likewise.
+	* bodyio.h: Remove bodies of encode() and decode().  Declare
+	encode and decode so that unit-tests/test_encoding can execute
+	them.
+	* sf-get3.cc (authorised): Change the types of 'len' and 'i' from
+	int to size_type, because they are offsets into a list.  Add FIXME
+	comment for use of atoi.
+	* bodyio.cc (body_insert_binary): Change the type of 'len' from
+	int to size_t, because it is a length.
+
+	Separate EOF detection from SCCS-line-type detection.
+	* sccsfile.h (sccs_file::read_line): Change prototype to separate
+	EOF detection from detection of what type of line we just read.
+	* sccsfile.cc (read_line): Update the implementation to match.
+	(read_delta): Update caller.
+	(sccs_file): Update caller.
+	* sf-delta.cc (add_delta): Update caller.
+	* sf-get.cc (get): Update caller.
+	* sf-prs.cc (print_delta): Update caller.
+	* sf-rmdel.cc (rmdel): Update caller.
+
+	Avoid issuing warnings for things in system headers.
+	* configure.ac: Disable warnigns for system headers.
+
+	Fix some commpiler warnings.
+	* bodyio.h (decode_line): return size_t, not int, for a length.
+	(encode_line): take a size_t parameter, not int, for a length.
+	* encoding.cc (decode_line): Use a size_t value for offsets in the
+	buffer.
+	* bodyio.cc (body_insert_text): Add casts where we know
+	conversions are safe to avoid compiler warnings.
+	(copy_data): Mark as a static function.
+
+2010-05-12  James Youngman  <jay@gnu.org>
+
+	Remove unused file list.cc.
+	* Makefile.am (EXTRA_DIST): Remove list.cc, since it is unused.
+	* list.cc: Delete.
+
+	Prune obsolete items in docs/TODO.
+	* docs/TODO: Tests for sact and val exist.  Remove that TODO item.
+
+	Some TODO housekeeping.
+	* sf-prs.cc (print_delta): Explain more clearly what get do for
+	:BD: in prs if we fail to seek to the body.
+	* sccsfile.h (s): Add TODO comment suggesting we use something
+	more efficient than mylist<string> for authoried users.
+	(sccs_file::admin): Likewise for set_flags and unset_flags
+	parameters to this method.
+
+	Remove mylist_delta_list; use more appropriate types for
+	loop/length variables.
+	* delta-table.h (mylist_delta_list::build_seq_table): Use more
+	appropriate (i.e. matching) types for loop variables.
+	Get rid of mylist_delta_list and abstract_delta_list.
+	* delta-table.cc (delta_at_seq_exists): There is no need for a
+	const qualifier for a bool return type; remove it.
+	(next_seqno): Just increment the result rather than adding an
+	unsigned int, as this simplifies the type combination.
+	* sf-get.cc (prepare_seqstate_1): Use size_type types for indexes and
+	length variables.
+
+	Use mylist<T>::size_type instead of int.
+	* mylist.h (mylist): Introduce size_type, and use it in method
+	parameters.
+	* rl-merge.cc (merge): Use mylist<release>::size_type.
+
+	Avoid a 'local variable shadows class member' warning.
+	* delta-table.h (abstract_delta_list): Avoid having a local shadow
+	an instance variable, by renaming the local.
+
+	Weed out some warning options that make sense for C but not C++.
+	* configure.ac (UNWANTED_WARNINGS): remove a bunch of warning
+	options that don't make sense for C++.
+
+	Remove rundundant call to AC_PROG_RANLIB.
+	* configure.ac: Don't call AC_PROG_RANLIB since we're using libtool.
+
+	Make more uses of sccs_pfile const (now that iterating won't
+	mutate it).
+	* pfile.h (sccs_pfile::find_locked): Make const.
+	(sccs_pfile::is_locked): Make const.
+	(sccs_pfile::find_to_be_created): Make const.
+	(sccs_pfile::is_to_be_created): Make const.
+	(sccs_pfile::print_lock_sid): Make const.
+	(sccs_pfile::update): Make const.
+	* pfile.cc (sccs_pfile::find_locked): Make const.
+	(find_to_be_created): Make const.
+	(print_lock_sid): Make const.
+	* pf-del.cc (sccs_pfile::update): Make const.
+
+	Make some references to sccs_pfile const now that iterating
+	doesn't mutate.
+	* sccsfile.h (sccs_file::find_next_sid): take a const reference to
+	sccs_pfile, since iterating over a sccs_pfile no longer needs to
+	mutate the container.
+	(sccs_file::sid_in_use): Likewise.
+	* sf-get2.cc (sid_in_use): Make the corresponding change in the
+	implementation.
+	(find_next_sid): Likewise.
+
+	Remove the built-in sccs_pfile iterator.  Use an STL iterator.
+	* pfile.h (sccs_pfile::edit_locks): change type from
+	mylist<edit_lock> to std::list<edit_lock> and remove the built-in
+	iterator.
+	(sccs_pfile::find_sid): Since there is no built-in iterator,
+	return the position of the lock we found as the second half of a
+	pair.
+	* pf-del.cc (find_sid): Make the corresponding change to the
+	implementation.
+	(update): Use the STL iterator rather than sccs_pfile::pos.
+	* delta.cc (delta_main): Update to the new signature of
+	sccs_pfile::find_sid.
+	* pfile.cc (sccs_pfile::sccs_pfile): Remove pos.
+	(sccs_pfile): Use list::push_back() instead of mylist::add().
+	(find_to_be_created): Rename from is_to_be_created.  Use the STL
+	iterator.
+	(find_locked): Rename from is_locked.  Use the STL iterator.
+	(print_lock_sid): Since there is no built-in position, take a
+	const_iterator as an argument.
+	* pf-add.cc (add_lock): Use list::empty() instead of
+	checking mylist::length() for zero-ness.
+	(add_lock): Use list::push_back() instead of mylist::add().
+	* rmdel.cc (is_locked): Use the STL iterator over sccs_pfile.
+	* sact.cc (main): Likewise.
+	* sccsfile.h (s): Now that iterating over the locks is not a
+	mutating operation on sccs_pfile, sccsfile::test_locks can take a
+	const reference to the sccs_pfile.
+	(add_delta): Since there is no built-in iteration position in
+	sccs_pfile, we also need to pass in an iterator.
+	Also #include pfile.h for sccs_pfile::iterator.
+
+	* sf-delta.cc (add_delta): Make the correspondingn change to the
+	implementation of sccs_file::add_delta.
+	* sf-get2.cc (sid_in_use): Use an STL iterator.
+	* unget.cc (main): Adapt to the new signature of
+	sccs_pfile::find_sid.
+
+2010-05-11  James Youngman  <jay@gnu.org>
+
+	Fix some compilation warnings for val.o.
+	* sccsfile.h (subst_parms::subst_parms): Change the type of the
+	'l' parameter to avoid type conversion in the constructor.
+	* configure.ac (UNWANTED_WARNINGS): we don't want -Wnested-externs
+	since that is only useful for Objective C, which we are not using.
+	* release.h (release::operator unsigned long): Ass that the data is
+	non-negative before casting it.  Include cssc-assert.h.
+
+2010-05-09  James Youngman  <jay@gnu.org>
+
+	Update to the current version of the Google C++ Testing Framework.
+	* bootstrap.conf (bootstrap_epilogue): Run autotools in
+	./googletest once we're done bootstrapping in the top-level
+	directory.
+	* googletest/*: update to version 424 of the Google C++ Testing
+	Framework.
+
+2010-05-06  James Youngman  <jay@gnu.org>
+
+	Mention some recent changes.
+	* NEWS: Mention some recent changes.
+
+	Various updates in docs/*
+	* docs/patches.txt: Modernise the diff-preparation instructions
+	(to ask people to use git).
+	* docs/Platforms: Mention the recent versions of Debian we've
+	tested on.  Change configure.in to configure.ac.  Indicate that
+	CSSC is known to work with GCC 4.4.
+	* docs/FIXED: Remove.
+	* docs/Makefile.am (EXTRA_DIST): Don't distribute docs/FIXED.
+	* auxfiles/CSSC.spec.in (%files): Remove docs/FIXED.
+	* docs/borrowed-files.txt: Mention that bootstrap is taken from
+	coreutils.  Mention that the GPL version is now 3.  Don't mention
+	-unused/move-if-change, since we removed it.
+
+2010-05-05  James Youngman  <jay@gnu.org>
+
+	Use the correct type in calls to release::release().
+	* sccsfile.cc (sccs_file): release floor and ceiling should be
+	initialised from shorts not ints.
+	* sf-admin.cc (admin): Likewise.
+
+	Make "make"'s idea of the m4 macro directory consistent with "bootstrap"
+	* Makefile.am (ACLOCAL_AMFLAGS): m4 files are in ./m4.  This is
+	now consistent with what "bootstrap" thinks.
+	* configure.ac: Likewise.
+
+	Fix a number of compiler warnings.
+	* mylist.h (mylist): mylist::operator=() should return a reference
+	to *this, so change it so that it does.
+	(mylist): Make mylist::length() return a size_t rather than an int.
+	* delta.h (delta::delta): List the initalisers in the order they
+	are actually performed.
+	* defaults.h (NORETURN): Don't define "NORETURN" to "volatile void".
+	* configure.ac: Disable warnings about aggregate return types and
+	missed inlined opportunities.
+	* release.h (release::release(int)): Change parameter to a short
+	int instead to avoid an implicit conversion.
+	* relvbr.h (relvbr::relvbr): initialise from short ints, not
+	regular ints, to avoid implicit casts.
+	* sccsname.h (sccsname::valid): Avoid cast from size_t to int by
+	changing the return type from int to bool.
+
+2010-05-03  James Youngman  <jay@gnu.org>
+
+	Enable many compiler warnings.
+	* bootstrap.conf (gnulib_modules): Add warnings and manywarnings.
+	* Makefile.am: Add WARN_CFLAGS to AM_CXXFLAGS.
+	* configure.ac: Enable all the warnings available from
+	gl_MANYWARN_ALL_GCC, except -Wundef -Wpadded -Wredundant-decls.
+
+	Assume the availability of strerror.
+	* configure.ac: Don't check header files for declarations of
+	sys_nerr or sys_errlist, since we no longer need those.
+
+	* quit.cc (print_err): Assume strerror is available.
+	Don't include sysnerr.h.
+	* Makefile.am (noinst_HEADERS): Remove sysnerr.h.
+	* sysnerr.h: Delete.
+
+	Don't declare rename, remove.  Include <cstdio> where we use it.
+	* file.h: Avoid declaring rename and remove.
+	* version.h: Include <cstdio>
+	* prompt.cc: Likewise.
+	* environment.cc: Likewise.
+	* linebuf.cc: Likewise.
+	* quit.cc: Likewise.
+	* fileiter.cc: Likewise.
+	* run.cc: Likewise.
+	* showconfig.cc: Include <cstdio>.  Update copyright year.
+
+	Avoid #if defined(FOO), use #if defined FOO instead.
+	* .x-sc_useless_cpp_parens: Exempt files in the Google C++ Testing
+	Framework.
+	Also exempt ekko.c, since it's better to preserve the similarity
+	with the code it was originally taken from.
+	* defaults.h: Avoid #if defined(FOO), use #if defined FOO
+	instead.
+	* cssc.h: Likewise.
+	* file.cc: Likewise.
+	* filelock.h: Likewise.
+	* quit.cc: Likewise.
+	* quit.h: Likewise.
+	* run.cc: Likewise.
+	* run.h: Likewise.
+	* sccsfile.cc: Likewise.
+	* sf-write.cc: Likewise.
+	* sysdep.h: Likewise.
+
+	Exempt programs that don't use error() from using error().
+	* .x-sc_unmarked_diagnostics: Exempt sccs.cgi and what.cc.
+
+	Skip sc_two_space_separator_in_usage for things that aren't code.
+	* .x-sc_two_space_separator_in_usage: Don't check docs/Platforms,
+	it's not a program.
+
+	Skip trailing-blank check, there are too many violations for now.
+	* .x-sc_trailing_blank: Skip this test.
+
+	Correct "the the" to "the".
+	* get.cc (main): correct "the the" to "the".
+	* sf-prs.cc: Likewise.
+	* docs/cssc.texi (@copying): Likewise.
+	(Top): Likewise.
+	(Delta Table): Likewise.
+	(PROJECTDIR): Likewise.
+	* .x-sc_the_the: Exempt googletest/src/gtest.cc.
+
+	Pacify the sc_makefile_TAB_only_indentation syntax check.
+	* tests/Makefile.am: Replaced sequences of 8 spaces with a single
+	TAB.
+
+	Remove obsolete replacements for missing library files.
+	* strerror.c: Remove obsolete file.
+	* strstr.c: Remove obsolete file.
+	* configure.ac: Don't refer to strerror or strstr via
+	AC_REPLACE_FUNCS.
+
+	Remove space-tab sequences.
+	* .x-sc_space_tab: Exempt NEWS, ChangeLog files and
+	tests/prt/all.expected.Z
+	* docs/Platforms: Avoid space-tab sequences.
+	* docs/TODO: Likewise.
+	* docs/tests-todo.txt: Likewise.
+	* pfile.h: Likewise.
+	* sccsfile.cc: Likewise.
+	* tests/Makefile.am: Likewise.
+	* tests/common/test-common: Likewise.
+	* tests/admin/flags.sh: Likewise.
+	* tests/binary/auto.sh: Likewise.
+	* tests/binary/binbasic.sh: Likewise.
+	* unit-tests/test_bigfile.cc: Likewise.
+	* unit-tests/test_myset.cc: Likewise.
+	* tests/admin/locks.sh: Likewise.
+	* tests/delta/nulldelta.sh: Likewise.
+	* tests/delta/basic.sh: Likewise.
+	* tests/delta/MRs.sh: Likewise.
+
+	Remove unused source files.
+	* rename.c: Remove unused file.
+	* remove.c: Remove unused file.
+	* configure.ac: Don't refer to these files with AC_REPLACE_FUNCS.
+
+	Fix lint errors caused by failure to include <config.h>.
+	* testutils/yes.c: Include <config.h> instead of "config.h".
+	* testutils/ekko.c: Likewise.
+	* testutils/lndir.c: Likewise.
+	* testutils/seeker.c: Likewise.
+	* testutils/user.c: Likewise.
+	* testutils/uu_decode.c: Likewise.
+	* testutils/yammer.c: Likewise.
+	* testutils/last-time.c: Include <config.h>
+	* rename.c: Likewise.
+	* remove.c: Likewise.
+
+	Avoid non-portable [ x -a y ] test usage.
+	* scripts/rev-freq.sh (scale): Change [ x -a y ] to [ x ] && [ y ].
+	* tests/make-links (common_files): Likewise.
+
+	Exempt ourselves from SRTEQ for all C and C++ files.
+	* .x-sc_prohibit_strcmp: We don't want to use STREQ, so suppress
+	this warning for C and C++ files.
+
+	Ignore existing instances of magic contstants in calls to exit.
+	* .x-sc_prohibit_magic_number_exit: Ignore existing instances of
+	magic contstants in calls to exit.
+
+	Remove trailing blank lines.
+	* tests/admin/Makefile.am: Remove trailing blank lines.
+	* tests/admin/abspath.sh: Likewise.
+	* tests/admin/flags.sh: Likewise.
+	* tests/admin/hardlinks.sh: Likewise.
+	* tests/admin/i-option.sh: Likewise.
+	* tests/admin/init-mr.sh: Likewise.
+	* tests/admin/locks.sh: Likewise.
+	* tests/admin/r-option.sh: Likewise.
+	* tests/admin/t-option.sh: Likewise.
+	* tests/admin/users.sh: Likewise.
+	* tests/admin/y-flag.sh: Likewise.
+	* tests/binary/auto.sh: Likewise.
+	* tests/binary/binbasic.sh: Likewise.
+	* tests/binary/diff.sh: Likewise.
+	* tests/bsd-sccs/driver-basic.sh: Likewise.
+	* tests/cdc/1general.sh: Likewise.
+	* tests/cdc/2comment.sh: Likewise.
+	* tests/cdc/3MRs.sh: Likewise.
+	* tests/cdc/4order.sh: Likewise.
+	* tests/common/not-root: Likewise.
+	* tests/delta/MRs.sh: Likewise.
+	* tests/delta/Makefile.am: Likewise.
+	* tests/delta/basic.sh: Likewise.
+	* tests/delta/errorcase.sh: Likewise.
+	* tests/delta/nulldelta.sh: Likewise.
+	* tests/delta/options.sh: Likewise.
+	* tests/get/branch.sh: Likewise.
+	* tests/get/create.sh: Likewise.
+	* tests/get/defsid.sh: Likewise.
+	* tests/get/errorcases.sh: Likewise.
+	* tests/get/gg_get_ix.sh: Likewise.
+	* tests/get/optorder.sh: Likewise.
+	* tests/get/writable.sh: Likewise.
+	* tests/initial/root.sh: Likewise.
+	* tests/large/admin.sh: Likewise.
+	* tests/make-links: Likewise.
+	* tests/prs/Makefile.am: Likewise.
+	* tests/prs/s_foo_bd_output.txt: Likewise.
+	* tests/prt/TODO: Likewise.
+	* tests/prt/all-512.sh: Likewise.
+	* tests/prt/reportmr.sh: Likewise.
+	* tests/rmdel/basic.sh: Likewise.
+	* tests/rmdel/edit.sh: Likewise.
+	* tests/sccsdiff/rap.sh: Likewise.
+	* tests/unget/Makefile.am: Likewise.
+	* tests/unget/exists.sh: Likewise.
+	* tests/unget/output.sh: Likewise.
+	* tests/val/Makefile.am: Likewise.
+	* tests/what/Makefile.am: Likewise.
+	* testutils/compare_gets.sh: Likewise.
+	* testutils/last-time.c: Likewise.
+	* testutils/lndir.c: Likewise.
+	* testutils/realpwd.cc: Likewise.
+	* testutils/user.c: Likewise.
+	* testutils/uu_decode.c: Likewise.
+	* testutils/yes.c: Likewise.
+	* unit-tests/test_delta-table.cc: Likewise.
+	* unit-tests/test_encoding2.cc: Likewise.
+	* unit-tests/test_mylist.cc: Likewise.
+	* unit-tests/test_sccsdate.cc: Likewise.
+	* unit-tests/test_sid_list.cc: Likewise.
+	* version.cc.in: Likewise.
+	* version.h: Likewise.
+	* AUTHORS: Likewise.
+	* sid_list.h: Likewise.
+	* tests/README: Likewise.
+	* sid.h: Likewise.
+	* seqstate.h: Likewise.
+	* sccsdiff.sh.in: Likewise.
+	* remove.c: Likewise.
+	* bsd/sccs.c: Likewise.
+	* bsd/Makefile.bsd: Likewise.
+	* delta.cc: Likewise.
+	* rel_list.h: Likewise.
+	* release.h: Likewise.
+	* docs/style.txt: Likewise.
+	* docs/config-info.texi.in: Likewise.
+	* docs/URLs: Likewise.
+	* docs/Platforms: Likewise.
+	* .x-sc_prohibit_empty_lines_at_EOF: Ignore trailing blank lines
+	at EOF for files in the Google C++ Testing Framework.
+
+	Add temporary exceptions for atoi checks.
+	* .x-sc_prohibit_atoi_atof: Temporary exemption for files where we
+	still use atoi() and so on.  Ignore atoi in ChangeLog.
+
+	Don't configure separately in testutils.
+	* testutils/ekko.c: Include "config.h", don't use include guards.
+	* testutils/lndir.c: Include "config.h", don't use include guards.
+	(dodir): Don't use NAMLEN (since the replacement dirent.h does not
+	define it).
+	* testutils/seeker.c: Remove useless HAVE_FOO_H checks.  Assume
+	fseek is available (gnulib provides it).
+	* testutils/user.c: Remove useless HAVE_FOO_H checks.
+	* testutils/uu_decode.c: Remove useless HAVE_FOO_H checks.
+	* testutils/yammer.c: Likewise.
+	* testutils/yes.c: Likewise.
+	* testutils/realpwd.cc: Likewise.
+	* gl/lib/.gitignore: Ignore fseek.c, fseeko.c, lseek.c, stdio-impl.h.
+	* testutils/configure.ac: Delete.
+	* testutils/NEWS: Delete.
+	* testutils/AUTHORS: Delete.
+	* testutils/COPYING: Delete.
+	* testutils/ChangeLog: Delete.
+	* testutils/INSTALL: Delete.
+	* configure.ac: Don't run configure in ./testutils.
+	AC_CONFIG_FILES: generate testutils/Makefile.
+	* bootstrap.conf (gnulib_modules): Use the fseek module.
+	* testutils/Makefile.am: Search for headers and libraries in ../gl/lib.
+
+2010-05-02  James Youngman  <jay@gnu.org>
+
+	Remove redundant inclusion guards for unistd.h and string.h.
+	* configure.ac: When deciding whether or not _POSIX_SAVED_IDS is
+	defined, include unistd.h unconditionally, since if the inclusion
+	fails, the answer will still be no.
+	* cssc.h: Don't use ifdef HAVE_UNISTD_H.  Since we're using
+	gnulib's unistd.h module, we will be able to include <unistd.h>
+	unconditionally.
+	* rename.c: Likewise.
+	* remove.c: Likewise.
+	* strstr.c: Likewise for HAVE_STRING_H and <string.h>, since the
+	latter is provided by gnulib's string module.
+
+	Disable some spurious errors about failure to call set_program_name.
+	* .x-sc_program_name: Don't require the test tools to call
+	set_program_name, since they don't link with gnulib.
+
+	Use the gnulib module progname.
+	* bsd/sccs.c: Include progname.h.
+	Remove unused variable MyName.
+	(show_version): Use program_name not MyName.
+	(usage): Likewise.
+	(callprog): Likewise.
+	(usrerr): Likewise.
+	(syserr): Likewise.
+	(main): Call set_program_name.
+
+	* bsd/Makefile.am: Link against gnulib.
+	* bootstrap.conf (gnulib_name): Give the gnulib library a sensible
+	name (instead of lib.a).
+	(gnulib_modules): Import the progname module.
+	* gl/lib/.gitignore: Ignore files from the progname module.
+
+	Use $(FOO) in Makefile.am rather than @FOO@.
+	* tests/Makefile.am: Automake defines $(VALGRIND) from @VALGRIND@
+	automatically anyway.
+	* cfg.mk (_makefile_at_at_check_exceptions): Exempt a couple of
+	usages by the Google C++ Testing Framework.
+	* Makefile.am: Use $(LIBOBJS) instead of @LIBOBJS@.
+	* unit-tests/Makefile.am (AM_LIBS): Likewise for $(PTHREAD_LIBS).
+	(AM_CXXFLAGS): Likewise for  $(PTHREAD_CFLAGS).
+
+	Silence an error about m4 quoting in the Google C++ Testing Framework.
+	* .x-sc_m4_quote_check: Silence error message about insufficient
+	quoting in googletest/m4/acx_pthread.m4.  We do this rather than
+	fixing the quoting in order to avoid subsequent merge problems and
+	spurious diffs.
+
+	Silence a spurious error about changing old NEWS entries.
+	* cfg.mk (old_NEWS_hash): Set old_NEWS_hash to the md5sum of a
+	zero-length input in order to silence a spurious error about
+	changing old NEWS entries.
+
+	Standardise on the use of "file system" rather than "filesystem".
+	* docs/cssc.texi (Filenames): Spell "filesystem" as "file system",
+	following the example of the POSIX standard.
+	* docs/Platforms: Likewise.
+	* file.cc (atomic_nfs_create): Likewise.
+	* tests/admin/hardlinks.sh: Likewise.
+	* tests/admin/.x-sc_file_system: Exempt the Google Unit Test code
+	from this requirement, since that will make later updates hard to
+	merge.
+	Also exempt ChangeLog files.
+
+	Ignore some maintainer-makefile lint complaints I don't plan to fix.
+	* .x-sc_error_message_period: Avoid syntax-check errors for error
+	messages ending in a full stop.  Some error messages contain more
+	than one sentence.
+	* .x-sc_error_message_uppercase: Avoid syntax-check errors for
+	error messages starting with a capital letter.
+
+	Fix a maintainer-makefile if-before-free lint issue.
+	* bsd/sccs.c (set_prefix): Remove useless if-before-free.
+
+	Adopt the use of the gnulib maintainer-makefile module.
+	(gnulib_modules): Add maintainer-makefile.
+
+	Update to GNU Free Documentation License, Version 1.3 (from 1.2).
+	* docs/cssc.texi (@copying): Update from FDL 1.2 to FDL 1.3.
+	* bootstrap.conf (gnulib_modules): Import module fdl.
+
+	* docs/fdl.texi: Symlink to ../gl/doc/fdl.texi.
+	* NEWS: Mention this change.
+
+	Don't create a spurious directory.
+	* bootstrap.conf (local_gl_dir): Don't create {m4_base}.  Create
+	${m4_base} instead.
+
+	Remove obsolete file gnulib-tests/.gitignore.
+	* gnulib-tests/.gitignore: Remove.
+
+	Clean up core files in the unit test directory.
+	* unit-tests/Makefile.am (COREFILES): Clean up "vgcore.*" files
+	for distclean.
+	* unit-tests/testwrapper.sh.in: Clean up core files once the test
+	is complete, unless the core file signals a valgrind failure.
+	Also inhibit core file generation int he first place (though this
+	probably won't work for valgrind).
+
+2010-05-01  James Youngman  <jay@gnu.org>
+
+	Put the gnulib code, etc. into ./gl
+	* bootstrap.conf (doc_base): Override doc_base, m4_base,
+	source_base, tests_base, local_gl_dir.
+	(gnulib_mk): Use Makefile.am, not gnulib.mk.
+	(gnulib_tool_option_extras): Tests are in gl/tests.
+	(bootstrap_epilogue): Use gl/tests/Makefile.am, not gnulib-tests/gnulib.mk.
+
+	* configure.ac (SUBDIRS): Rename the gnulib source directory from
+	lib to gl/lib.
+	(AC_CONFIG_FILES): generate gl/Makefile gl/lib/Makefile
+	gl/doc/Makefile gl/tests/Makefile.
+	* Makefile.am (AM_CPPFLAGS): Pass -I gl/lib.
+	* bsd/Makefile.am (AM_CPPFLAGS): Pass -I ../gl/lib.
+
+	Adopt the use of the first gnulib module: dirent.
+	* gnulib-tests/.gitignore: Ignore gnulib test files (since they're
+	imported rather than checked into git).
+	* lib/.gitignore: Ignore gnulib source files (for the same reason).
+	* configure.ac (AC_CONFIG_FILES): generate lib/Makefile.a
+	* Makefile.am (SUBDIRS): Add "lib", which is where the gnulib code is.
+
+	* bsd/sccs.c: Remove HAVE_XXX_H header guards.
+	Include dirent-safer.h.  Remove the hand-hacked dirent portability
+	macros (and remove NAMLEN as a side-effect).
+	(do_clean): Don't assume the NAMLEN macro is defined.
+	* file.cc: Include dirent-safer.h.  Remove the hand-hacked dirent
+	portability macros (and remove NAMLEN as a side-effect).
+	(is_directory): Move this function here from fileiter.cc.
+	* fileiter.cc: Include dirent-safer.h.  Remove the hand-hacked
+	dirent portability macros (and remove NAMLEN as a side-effect).
+
+	Show the value of $(VALGRIND) at the start of regression testing.
+	* tests/Makefile.am (test-initial): echo $(VALGRIND).
+
+	Add unit test verifying that we don't read uninitialised data in encode.
+	* unit-tests/test_encoding2.cc: New unit test file.  Verifies that
+	we don't read uninitialised data when we reach the end of the
+	encoding input.
+	* unit-tests/Makefile.am (unit_tests): Add test_encoding2.
+
+	Avoid reading uninitialised input.
+	* encoding.cc (encode_line): Encode the tail of the input without
+	running over the end of in[].
+
+	Handling of directories in get is mandatory in POSIX, so remove CONFIG_NO_DIRECTORY.
+	* fileiter.cc: don't define CONFIG_NO_DIRECTORY
+	(sccs_file_iterator::sccs_file_iterator): don't check CONFIG_NO_DIRECTORY
+	* fileiter.h (class sccs_file_iterator): Likewise.
+	* file.cc: don't define CONFIG_NO_DIRECTORY
+
+2010-04-29  James Youngman  <jay@gnu.org>
+
+	Delete unused file split.cc.
+	* split.cc: Delete unused file.
+	* Makefile.am (libcssc_a_SOURCES): Remove split.cc.
+
+	Removed some unused code.
+	* delta.cc (delta_main): Removed some unused '#if 0' code.
+	* sf-write.cc (update_checksum): Likewise.
+	* my-getopt.cc (reorder): Likewise.
+	* file.cc (file_lock): Likewise.
+	* sccsname.cc (valid_filename): Likewise.
+	(create): Likewise.
+	(sub_file): Likewise.
+	(make_valid): Likewise.
+	* seqstate.cc (decide_disposition): Likewise.
+	* sf-get3.cc (authorised): Likewise.
+	* sid.cc (invalid_range): Likewise.
+	* what.cc (main): Likewise.
+
+2010-04-28  James Youngman  <jay@gnu.org>
+
+	Use STL to implement mylist<T>.
+	* mylist.h (mylist): Implement mylist<T> as std::vector<T>.
+	* delta-table.h (mylist<T>::select(i)): delegate to l[i].
+	* unit-tests/test_mylist.cc: Drop the requirement that the
+	mylist<T> implementation does not need there to be a T::T(const
+	T&) copy constructor.
+	* mylist.h (mylist): Implement mylist<T>::operator==(const
+	mylist<T>&) const, which the unit tests need.
+
+	Inline delta::removed(), for a small performance boost.
+	* delta.h (class delta): Inline delta::removed().
+	* sccs-delta.cc: Remove the non-inline version.
+
+	Call strtoul to do the actual conversion, for a small performance boost.
+	* sccsfile.cc (strict_atoul_idu): Call strtoul to perform the
+	conversion itself.
+
+	Generate a larger test file.
+	* unit-tests/test_bigfile.cc (main): Increase the number of deltas
+	in the produced file to about 30,000.
+
+	Switch to using an STL data structure to represent the delta list.
+	* delta-table.h (stl_delta_list): Reimplement delta_list using
+	STL, reducing the time it takes to validate an SCCS file with
+	30,000 deltas from 45s to 3s.   Separate the cssc_delta_table
+	class from the data structure (a typedef delta_list) for looser
+	coupling.  Retain the old data structure in the unused class
+	mylist_delta_list.
+	* delta-table.cc (delta_at_seq_exists): Delegate to the
+	delta_list.
+	(delta_at_seq): Likewise.
+	(cssc_delta_table::~cssc_delta_table()): Since we no longer have a
+	pointer member, the destructor no longer needs to do anything.
+	(cssc_delta_table::build_seq_table): Push down into
+	mylist_delta_list.
+	(cssc_delta_table::add(const delta&)): Don't call update_highest
+	since this work is done in delta_list::add(const delta&).
+	(cssc_delta_table::update_highest): Remove obsolete function.
+	* dtbl-prepend.cc (prepend): Don't call obsolete method
+	update_highest, and use the correct (updated) type for the class
+	member l (delta_list).
+
+	Performance improvement for val.
+	* sf-val.cc (check_loop_free): Use an O(N) method of
+	consistency-checking the delta graph, rather than the old O(N^2)
+	method.
+	* delta.h (class delta): Make accessor functions id(), date(),
+	user(), seq() and prev_seq() inline.
+
+2010-04-27  James Youngman  <jay@gnu.org>
+
+	Avoid touching missing sequence numbers in 'get'.
+	* sf-get2.cc (get): Don't call delta_table->delta_at_seq() for
+	sequence numbers for which delta_table->delta_at_seq_exists()
+	returns false.
+
+	When generating the test output file, set the checksum correctly.
+	* unit-tests/test_bigfile.cc: Set the file's checksum correctly.
+
+2010-04-26  James Youngman  <jay@gnu.org>
+
+	Add a tool for creating (large) SCCS files.
+	* unit-tests/Makefile.am: Build test_bigfile.
+	* unit-tests/test_bigfile.cc: New test program; produces a large
+	SCCS file.
+	* sid.h (class sid): Make sid::sid(short,short,short,short)
+	public, so that we can use it from one of the test programs.
+
+2010-04-25  James Youngman  <jay@gnu.org>
+
+	Allow the user to disable valgrind after running configure.
+	* README (--enable-max-line-length): Document this configure
+	option.  Explain how to make the other formats of manual (PDF,
+	HTML).  Explain how to use CSSC_DISABLE_VALGRIND.
+	* unit-tests/Makefile.am (TESTS_ENVIRONMENT): Invoke the unit
+	tests via 'testwrapper.sh'.
+	* unit-tests/testwrapper.sh.in: New file; used to invoke the unit
+	tests.
+	Make sure error tests don't pass if there is a valgrind problem;
+	allow the user to disable valgrind.
+	* tests/common/command-names: Allow the user to disable Valgrind
+	by setting the environment variable CSSC_DISABLE_VALGRIND.
+	* configure.ac: Make valgrind exit with status 10 when there is a
+	problem, so tests which exercise failure cases in CSSC don't
+	mistakenly pass when there is a valgrind problem.  Create
+	unit-tests/testwrapper.sh from unit-tests/testwrapper.sh.in.
+
+	Enable the y2k tests.
+	* tests/Makefile.am (test-year-2000): Actually run the y2k tests.
+
+	Use valgrind for y2k tests.
+	* tests/year-2000/ext.sh: Use valgrind.
+	* tests/year-2000/prs-y2k.sh: Likewise.
+
+	Use valgrind for what tests.
+	* tests/what/whatbasic.sh: Use valgrind.
+
+	Use valgrind for val tests.
+	* tests/val/valbasic.sh: Use valgrind.
+	* tests/val/y2k.sh: Likewise.
+
+	Use valgrind for unget tests.
+	* tests/unget/exists.sh: Use valgrind.
+	* tests/unget/output.sh: Likewise.
+
+	Use valgrind for sact tests.
+	* tests/sact/sactbasic.sh: Use valgrind.
+	* tests/sact/sf513800.sh: Likewise.
+
+	Use valgrind for rmdel tests.
+	* tests/rmdel/basic.sh: Use valgrind.
+	* tests/rmdel/exists.sh: Likewise.
+	* tests/rmdel/edit.sh: Likewise.
+
+	Use valgrind for prt tests.
+	* tests/prt/default.sh: Use valgrind.
+	* tests/prt/nodel.sh: Likewise.
+	* tests/prt/exists.sh: Likewise.
+	* tests/prt/reportmr.sh: Likewise.n
+
+	Use valgrind for prs tests.
+	* tests/prs/keywords.sh: Use valgrind.
+	* tests/prs/format.sh: Likewise.
+	* tests/prs/exists.sh: Likewise.
+	* tests/prs/body.sh: Likewise.
+
+	Use valgrind for large tests.
+	* tests/large/admin.sh: Use valgrind.
+
+	Use valgrind for get tests.
+	* tests/get/annotate.sh: Use valgrind.
+	* tests/get/a-option.sh: Likewise.
+	* tests/get/branch.sh: Likewise.
+	* tests/get/create.sh: Likewise.
+	* tests/get/defsid.sh: Likewise.
+	* tests/get/delta-summary.sh: Likewise.
+	* tests/get/errorcases.sh: Likewise.
+	* tests/get/excl_ig_1.sh: Likewise.
+	* tests/get/excl_ig_2.sh: Likewise.
+	* tests/get/gg_get_ix.sh: Likewise.
+	* tests/get/included.sh: Likewise.
+	* tests/get/middle-fail.sh: Likewise.
+	* tests/get/no-sfile.sh: Likewise.
+	* tests/get/only-one.sh: Likewise.
+	* tests/get/optorder.sh: Likewise.
+	* tests/get/removed-delta.sh: Likewise.
+	* tests/get/sep_subst.sh: Likewise.
+	* tests/get/sf111140.sh: Likewise.
+	* tests/get/sf479916.sh: Likewise.
+	* tests/get/sf664900.sh: Likewise.
+	* tests/get/sf865422.sh: Likewise.
+	* tests/get/sid-select.sh: Likewise.
+	* tests/get/sid-select2.sh: Likewise.
+	* tests/get/subst.sh: Likewise.
+	* tests/get/t-option.sh: Likewise.
+
+	Use valgrind for delta tests.
+	* tests/delta/basic.sh: Use valgrind.
+	* tests/delta/errorcase.sh: Likewise.
+	* tests/delta/n-option.sh: Likewise.
+	* tests/delta/options.sh: Likewise.
+	* tests/delta/nulldelta.sh: Likewise
+
+	Use valgrind for binary file tests, sccs tests and cdc tests.
+	* tests/binary/auto.sh: Use valgrind.
+	* tests/binary/binbasic.sh: Likewise.
+	* tests/binary/eightbit.sh: Likewise.
+	* tests/binary/seeking.sh: Likewise.
+	* tests/bsd-sccs/sf595594.sh: Likewise.
+	* tests/bsd-sccs/driver-basic.sh: Likewise.
+	* tests/bsd-sccs/delsfile.sh: Likewise.
+	* tests/cdc/1general.sh: Use valgrind.
+	* tests/cdc/2comment.sh: Likewise.
+	* tests/cdc/3MRs.sh: Likewise.
+	* tests/cdc/4order.sh: Likewise.
+
+	Support running the regression tests under valgrind.
+	* configure.ac: Allow the user to specify --without-valgrind.
+	* tests/admin/admin-hz.sh: Use valgrind.
+	* tests/admin/abspath.sh: Likewise.
+	* tests/admin/comment.sh: Likewise.
+	* tests/admin/flags.sh: Likewise.
+	* tests/admin/hardlinks.sh: Likewise.
+	* tests/admin/i-option.sh: Likewise.
+	* tests/admin/init-mr.sh: Likewise.
+	* tests/admin/locks.sh: Likewise.
+	* tests/admin/r-option.sh: Likewise.
+	* tests/admin/t-option.sh: Likewise.
+	* tests/admin/users.sh: Likewise.
+	* tests/admin/y-flag.sh: Likewise.
+	* tests/common/command-names: Define vg_... versions of $admin,
+	$get, etc.  These invoke the named command under valgrind (it
+	would be too slow to invoke everything under valgrind).
+	* tests/Makefile.am (VALGRIND): substitute this variable and
+	export it to the tests.
+
+	Run the unit tests under valgrind.
+	* configure.ac: Check for the presence of valgrind.  If we find
+	it, use valgrind -q --trace-children=yes.
+
+	* unit-tests/Makefile.am (TESTS_ENVIRONMENT): Run the tests under
+	valgrind.
+	* tests/README: Explain that these are regression tests and point
+	to the unit tests.
+
+	Remove explicit template instantiations.
+	* admin.cc: Remove explicit template instantiations.
+	* cap.cc: Likewise.
+	* cdc.cc: Likewise.
+	* delta.cc: Likewise.
+	* dtbl-prepend.cc: Likewise.
+	* fileiter.cc: Likewise.
+	* get.cc: Likewise.
+	* prs.cc: Likewise.
+	* prt.cc: Likewise.
+	* rel_list.cc: Likewise.
+	* rmdel.cc: Likewise.
+	* sact.cc: Likewise.
+	* sccs-delta.cc: Likewise.
+	* sccsfile.cc: Likewise.
+	* sf-prs.cc: Likewise.
+	* unget.cc: Likewise.
+	* val.cc: Likewise.
+	* filediff.cc: Trimmed some blank lines.
+	* sf-kw.cc: Likewise.
+
+	Isolate directory-handling logic in fileiter.cc.
+	* fileiter.cc: Move the complex logic around trying to include
+	<dirent.h> out of fileiter.h and into fileiter.cc.
+	* fileiter.h: Make the corresponding deletion and remove the
+	#error trap which demanded that <cofnig.h> had been included.
+	* delta.cc: Remove the now-obsolete explanatory comment.
+	* file.cc: Move is_directory into fileiter.cc, since it also needs
+	opendir.
+
+	Produce a compile failiure when config.h was not included before
+	fileiter.h.  Doing things the other way around produces a
+	regression test failure.
+	* fileiter.h: Force a compilation failure if config.h was not included.
+	* delta.cc: Include config.h before fileiter.h.
+
+	Remove some obsolete preprocessor macros.
+	* cssc.h (CONFIG_WAIT_IS_A_USELESS_MACRO): Remove obsolete macro.
+	* sysdep.h: Assume wait is declared in sys/wait.h.
+	* cssc.h (CONFIG_DJGPP): Remove obsolete macro.
+
+	Remove some obsolete manual declarations of functions.
+	* file.cc: Don't manually declare stat.  Likewise for getpwuid.
+	* cssc.h: Don't undefine the TESTING macro; nobody defines it
+	either.  Don't undefine CONFIG_DECLARE_STAT,
+	CONFIG_DECLARE_GETPWUID, CONFIG_DECLARE_TIMEZONE,
+	CONFIG_DECLARE_TZSET,
+
+
+	* sysdep.h: Don't manually declare fdopen.
+
+	Include cssc headers where they are needed, not in cssc.h.
+	* my-getopt.cc: Include quit.h but not cssc.h.
+	* linebuf.cc: Include ioerr.h.
+	* writesubst.cc: Likewise.
+	* sccsfile.cc: Likewise.
+	* sf-add.cc: Likewise.
+	* sid.cc: Likewise.
+	* fileiter.cc: Include file.h and quit.h.
+	* file.cc: Include quit.h and ioerr.h.
+	* sccsdate.h: Likewise.
+	* sf-write.cc: Likewise.
+	* rel_list.cc: Likewise.
+	* cdc.cc: Include file.h.
+	* sf-csc.cc: Likewise.
+	* sccsname.cc: Likewise.
+	* sf-get3.cc: Likewise.
+	* sf-delta.cc: Likewise.
+	* val.cc: Likewise.
+	* unget.cc: Likewise.
+	* rmdel.cc: Likewise.
+	* delta.cc: Likewise.
+	* filediff.cc: Likewise.
+	* pf-add.cc: Likewise.
+	* pf-del.cc: Likewise.
+	* sf-admin.cc: Likewise.
+	* prompt.cc: Likewise.
+	* fdclosed.cc: Include defaults.h.
+	* run.cc: Include quit.h
+
+2010-04-24  James Youngman  <jay@gnu.org>
+
+	Include system headers where they are needed, not in cssc.h.
+	* except.h: Add a multiple-include guard.  #include <cstdlib>.
+	* environment.cc: #include <cstdlib>, <cstring>, <cerrno>
+	* bodyio.cc: #include <cstring>, ioerr.h, file.h.
+	* fileiter.cc: Likewise.
+	* linebuf.cc: Likewise.
+	* prompt.cc: Likewise.
+	* sccsdate.cc: Likewise.
+	* fatalsig.cc: #include <cstdlib>
+	* filepos.h: #include <cerrno>.
+	* quit.cc: #include <cerrno> instead of <errno.h>.  Include
+	<cstring> also.
+	* cssc.h: Don't include standard headers: stdio.h, stdlib.h,
+	stddef.h, string.h, ctype.h, errno.h.
+	Unconditionally include <config.h>.
+	Don't include quit.h or file.h.
+
+	Further include-what-you-use fixes.
+	* delta.cc: Include cleanup.h, and ioerr.h.  Include delta.h earlier.
+
+	Run the uu(en|de)coding self-test as part of the unit tests.
+	* bodyio.h: Move a couple of inline functions to here (out of
+	encoding.cc) so that I can use them in the self-test.
+	* encoding.cc: Make the corresponding deletion.  Move the test
+	code itself into test_encodingcc.
+	* unit-tests/test_encoding.cc: Moved the encoding self-test to
+	here instead of leaving it in encding.c, where it was not used.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_encoding.
+	Also define test_encoding_SOURCES.  Modify the usage semantics of
+	the test program so that the default is to run the self-test.
+
+	Avoid redundant inclusion of cssc.h, sccsfile.h, delta.h.
+	* dtbl-prepend.cc: Don't include cssc.h or sccsfile.h, since we
+	don't use them.
+	* delta-table.cc: Avoid including cssc.h, sccsfile.h, delta.h
+	since we don't use them.
+
+	Various include-what-you-use fixes.
+	* delta-iterator.cc: Don't include cssc.h, sccsfile.h or delta.h,
+	since we don't use them.  Do include cssc-assert.h, since we do
+	use that.
+	* delta-iterator.h: add forward declarations of cssc_delta_table
+	and delta.
+	* bodyio.cc: Include what you use; include bodyio.h first.
+	* bodyio.h: Include <cstdio>.
+	* canonify.cc: Don't include cssc.h.  Include sccsname.h first.
+	Include file.h.
+	* cleanup.h: Move class cleanup into this separate file (out of quit.h).
+	* quit.h: Don't declare class cleanup (we moved it).
+	* filelock.h: Include cleanup.h.
+	* sccsname.h: Include mystring.h and filelock.h.
+	* cssc.h: Move declaration of split_filename into file.h.
+	* file.h: Declare split_filename.
+	* pfile.h: Include ioerr.h.
+
+	Include what you use; include sid_list.h first.
+	* unit-tests/test_sid_list.cc: Include only what we use; don't
+	include cssc.h or sid.h.
+
+	Include what you use; make it possible to include quit.h first or
+	sccsdate.h first.
+	* sccsdate.h: Include <cstdio> and mystring.h.
+	* quit.h: Include cssc-assert.h (for ASSERT).
+	* unit-tests/test_sccsdate.cc: Include sccsdate.h first.
+
+	Include what you use; make it possible to use class relvbr by
+	including only relvbr.h.
+	* unit-tests/test_relvbr.cc: Include relvbr.h first, don't include
+	release.h or sid.h.
+	* relvbr.h: Include <cstdio>.
+
+	Include what you use; make it possible to use class release by
+	including only release.h and release_list by including only
+	rel_list.h.
+	* release.h: Include <cstdio>.
+	* unit-tests/test_release.cc: Don't include cssc.h.
+	* unit-tests/test_rel_list.cc: Likewise for rel_list.h.
+
+	Include what you use; include delta-table.h first in the unit test.
+	* unit-tests/test_delta-table.cc: Include delta-table.h first.
+
+	Include what you use; make it possible to use delta by
+	including only delta.h.
+	* delta.h: Include sid.h, sccsdate.h, mystring.h, mylist.h.
+	Move typedef of seq_no to here from cssc.h
+	* cssc.h: Move typesef of seq_no from here to delta.h.
+	* sccsfile.h: Include delta.h.
+	* seqstate.h: Likewise.
+	* unit-tests/test_delta.cc: Include delta.h first.  Don't include cssc.h.
+
+	Include what you use; make it possible to use range_list<T> by
+	including only sid_list.h.
+	* unit-tests/test_sid.cc: Include sid.h first.   Don't include cssc.h.
+	* sid_list.h: Include cstdio, cstring, and qui.t.h (for ctor_fail).
+	* sid.h: Include mystring.h.
+
+	Include what you use; make it possible to use stack<T> by
+	including only stack.h.
+	* unit-tests/test_stack.cc: Include what you use: include
+	"stack.h" but not "cssc.h".
+
+	Include what you use; make it possible to use myset<T> by
+	including only myset.h.
+	* unit-tests/test_myset.cc: Include myset.h first.
+	* myset.h: Include mylist.h since we use mylist<T>.
+
+	Include what you use; make it possible to use mylist<> by
+	including only mylist.h.
+	* cssc-assert.h: New file; defines the ASSERT macro.
+	* quit.h: Delete old definition of ASSERT and declaration of
+	assert_failed.
+	* mylist.h: Include cssc-assert.h to define ASSERT, and
+	<cstdlib> for NULL.
+	* unit-tests/test_mylist.cc: Don't include "cssc.h" any more.
+	* quit.cc: Include cssc-assert.h for ASSERT and declaration of assert_failed.
+	* fatalsig.cc: Include cssc-assert.h since we use ASSERT.
+	* file.cc: Likewise.
+	* filediff.cc: Likewise.
+	* fnsplit.cc: Likewise.
+	* linebuf.cc: Likewise.
+	* sccsdate.cc: Likewise.
+	* sccsname.cc: Likewise.
+	* sid.h: Likewise.
+	* stack.h: Likewise.
+
+	Move CONFIG_LIST_CHUNK_SIZE from cssc.h to mylist.h.
+	* cssc.h (CONFIG_LIST_CHUNK_SIZE): Move into mylist.h.
+	* mylist.h (mylist): Relocate CONFIG_LIST_CHUNK_SIZE here from
+	cssc.h, but convert it to an enum.
+
+	Add/correct some comments.
+	* delta-table.cc: Correct the comment giving the location of
+	dtbl-prepend.cc.
+	* delta-table.h (class cssc_delta_table): Add a comment explaining
+	why cssc_delta_table::delta_at_seq_exists and
+	cssc_delta_table::delta_at_seq are not const.
+
+	Add unit tests for delta-table.h.
+	* unit-tests/test_delta-table.cc: New file, contains unit tests
+	for delta-table.h.
+	* unit-tests/Makefile.am (test_delta_table_SOURCES): New
+	variable.
+	(check_PROGRAMS): Add test_delta-table.
+	* unit-tests/TODO.txt: Remove delta-table.h; there are tests for
+	it now.
+
+	Cosmetic fixes for stack.h.
+	* stack.h: Remove obsolete version comment.
+	(stack::operator=): Correct indentation.
+
+	Make the data members of struct delta private.
+	* delta.h (delta): Make all the data members private and add
+	accessor and mutator methods.  Rename the data members to have a
+	trailing underscore.
+	(delta::id): Accessor for id_.
+	(delta::set_id): Mutator for id_.
+	(delta::date): Accessor for date_.
+	(delta::set_date): Mutator for date_.
+	(delta::user): Accessor for user_.
+	(delta::set_user): Mutator for user_.
+	(delta::seq): Accessor for seq_.
+	(delta::set_seq): Mutator for set_seq.
+	(delta::prev_seq): Accessor for prev_seq_.
+	(delta::set_prev_seq): Mutator for prev_seq_.
+	(delta::inserted): Accessor for inserted_.
+	(delta::set_inserted): Mutator for inserted_.
+	(delta::deleted): Accessor for deleted_ (there is no mutator).
+	(delta::unchanged): Accessor for unchanged (there is no mutator).
+	(delta::set_idu): Set inserted_, deleted_, unchanged_ all at once.
+	(delta::increment_inserted): Increments inserted_.
+	(delta::increment_deleted): Increments deleted_.
+	(delta::increment_unchanged): Increments unchanged_.
+	(delta::get_included_seqnos): Accessor for included_.
+	(delta::get_excluded_seqnos): Accessor for excluded_.
+	(delta::get_ignored_seqnos): Accessor for ignored_.
+	(delta::has_includes): Accessor for have_includes_.
+	(delta::set_has_includes): Mutator for have_includes_.
+	(delta::add_include): Add an item to included_.
+	(delta::has_excludes): Accessor for have_excludes_.
+	(delta::set_has_excludes): Mutator for have_excludes_.
+	(delta::add_exclude): Add an item to excluded_.
+	(delta::has_ignores): Accessor for have_ignores_.
+	(delta::set_has_ignores): Mutator for have_ignores_.
+	(delta::add_ignore): Add an item to ignored_.
+	(delta::mrs): Accessor for mrs_.
+	(delta::set_mrs): Mutator for mrs_.
+	(delta::add_mr): Add an item to mrs_.
+	(delta::comments): Accessor for comments_.
+	(delta::set_comments): Mutator for comments_.
+	(delta::add_comment): Add an item to comments_.
+	* unit-tests/test_delta.cc (DeltaTest.Constructor): Modify unit
+	test to use the new accessor methods.
+	(DeltaTest.Assignment): Likewise.
+	(DeltaTest.Mutators): New unit test for the new mutator methods.
+	* sccs-delta.cc (delta::operator=): Use the new member names.
+	(removed): Likewise.
+	* delta-table.cc: Use the new accessor functions.
+	* sccsfile.cc: Likewise.
+	* writesubst.cc: Likewise.
+	* sf-add.cc: Likewise.
+	* sf-admin.cc: Likewise.
+	* sf-write.cc: Likewise.
+	* sf-get.cc: Likewise.
+	* sf-get2.cc: Likewise.
+	* sf-get3.cc: Likewise.
+	* sf-delta.cc: Likewise.
+	(add_delta): Instead of zeroing inserted/deleted/unchanged counts,
+	simply verify that the constructor did that.
+	* sf-cdc.cc : Use the new accessor functions.
+	(process_mrs): Since delta no longer offers access to a mutable
+	list of MRs, modify process_mrs to return the updates list of MRs.
+	The deleted flag which used to be the return value is now an
+	output parameter.
+	(cdc): Change the type of mrs_deleted from int to bool.
+	* sf-prs.cc (print_delta): Use the new accessor functions.  Also
+	fix a typo in a comment.
+	(prs): Use the new accessor functions.
+	* sf-prt.cc (cutoff::excludes_delta): Use the new accessor functions.
+	(cutoff::print): Likewise.
+	(sccs_file::prt): Likewise.
+	* sf-rmdel.cc (sccs_file::rmdel): Use the new accessor functions.
+	* sf-val.cc (sccs_file::validate_seq_lists): Use the new accessor functions.
+	(sccs_file::validate_isomorphism): Likewise.
+	(validate): Likewise.
+	* unit-tests/TODO.txt: delta.h has tests now, remove it from the
+	TODO list.
+
+2010-04-23  James Youngman  <jay@gnu.org>
+
+	Rename delta::type to delta_type, make it private, validate it.
+	* delta.h (struct delta): Rename the 'type' member to 'delta_type'
+	and make it private, to support better data validation.
+	(delta::delta()): Initialise delta_type to 'D' rather than leaving
+	it uninitialised.  Also initialise members id, seq and prev_seq.
+	(delta::delta(...): Set have_includes and have_excludes to true if
+	the relevant list is starting off non-empty.
+	(delta::get_type, delta::set_type): New accessor/mutator methods.
+	* unit-tests/test_delta.cc: Verify that have_includes and
+	have_excludes are true if the delta was constructed with
+	(respectively) includes or excludes.
+	(DeltaDeathTest.Includes): verify that invalid delta types are
+	diagnosed.
+	(delta::is_valid_delta_type): new method, validates delta::delta_type.
+	* sf-rmdel.cc (rmdel): Use the accessor method to access
+	delta::delta_type.
+	* sccsfile.cc (read_delta): Delegate delta type validation to
+	delta::is_valid_delta_type.
+	* sccs-delta.cc (delta::operator=): delta::type renamed to
+	delta::delta_type.
+	(delta::removed): Likewise.
+	* sf-prs.cc (print_delta): Likewise.
+	* sf-prt.cc (prt): Likewise.
+	* sf-write.cc (write_delta): Likewise.
+	* sf-val.cc (validate): There is no longer a need to validate
+	delta::type, as this field is validater by the delta(...)
+	constructors and by delta::set_type().
+
+2010-04-22  James Youngman  <jay@gnu.org>
+
+	Add a unit test for delta.h.
+	* unit-tests/test_delta.cc: New file.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_delta.
+
+	Implement equality test for mylist<T>.
+	* mylist.h (operator==): Implement operator==.
+	* unit-tests/test_mylist.cc (MylistTest): Add unit tests for
+	operator==.
+
+	Remove some obsolete comments.
+	* mylist.h: Remove a spurious extra "Local Variables" comment.
+
+	* sid_list.h: Remove some obsolete (and long commented-out) code.
+	* relvbr.h (class relvbr): Likewise.
+	* release.h (class release): Likewise.
+
+	Finish test_sccsdate.cc.
+	* unit-tests/test_sccsdate.cc: Added unit tests for the remaining
+	public methods of sccs_date.
+	* unit-tests/TODO.txt: sccsdate.h has unit tests now, remove it
+	from the TODO list.
+
+	Remove core files for "make distclean".
+	* unit-tests/Makefile.am (DISTCLEANFILES): Remove core files.
+
+	* AUTHORS: Mention that googletest/CONTRIBUTORS enumerates the
+	contributors to the Google C++ Testing Framework.
+
+	* googletest/Makefile.am (EXTRA_DIST): Distribute README.cssc.
+	* unit-tests/Makefile.am (EXTRA_DIST): Distribute TODO.txt.
+
+	Add TODO list for unit tests we need to write.
+	* unit-tests/TODO.txt: New file; a working list of what unit tests
+	are still needed.
+
+	Add unit tests for sccsdate.h.
+	* unit-tests/test_sccsdate.cc: New file.
+	* unit-tests/Makefile.am (test_sccsdate_SOURCES): Add
+	test_sccsdate.cc.
+	(check_PROGRAMS): Add test_sccsdate.
+
+	Explain what the googletest directory is and how to run unit tests.
+	* README (Testing): Expand to include a description of the unit
+	tests and how to run them.
+	* docs/borrowed-files.txt: Mention googletest/*.  Also remove tghe
+	out-of-date information about the last update to the files which
+	autoconf updates.
+	* googletest/README.cssc: Add README file explaining the
+	relationship between the code in this directory and the rest of
+	CSSC.
+
+2010-04-21  James Youngman  <jay@gnu.org>
+
+	Add unit test cases for ASSERT failures.
+	* unit-tests/test_mylist.cc (MylistDeathTest): Various unit test
+	cases for ASSERT failures.
+	* unit-tests/test_sid.cc (SidTest.Successor): Verify that the null
+	SID's successor is 1.1.
+
+	Unit test sid_list::merge and sid_list::remove
+	* unit-tests/test_sid_list.cc: Enable unit tests for
+	sid_list::merge and sid_list::remove.  Include rl-merge.h since
+	that file defines these methods.
+
+	Unit test release_list::merge and release_list::remove
+	* unit-tests/test_rel_list.cc: Add unit tests for
+	release_list::merge and release_list::remove.
+
+	Move rl-merge.cc into libcssc.a
+	* Makefile.am (libcssc_a_SOURCES): Move rl-merge.cc into the library.
+	(get_SOURCES): Remove rl-merge.cc.
+	(admin_SOURCES): Likewise.
+	* rel_list.h: Remove some unnecessary blank lines.
+
+	Add unit test for rel_list.h
+	* unit-tests/test_rel_list.cc: New unit test.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_rel_list.
+	(test_rel_list_SOURCES): Add test_rel_list.cc.
+
+	Add unit test for sid_list.h
+	* unit-tests/test_sid_list.cc: New unit test; tests sid_list.h.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_sid_list.
+	(test_sid_list_SOURCES): Add test_sid_list.cc.
+
+2010-04-20  James Youngman  <jay@gnu.org>
+
+	Add unit test for release.h.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_release.
+	(test_release_SOURCES): Add test_release.cc.
+	* unit-tests/test_release.cc: New unit test.
+
+	Add unit test for relvbr.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_relvbr.
+	(test_relvbr_SOURCES): Add test_relvbr.cc.
+	* unit-tests/test_relvbr.cc: New unit test.
+
+	Add unit test for sid.h.
+	* unit-tests/test_sid.cc: New unit test.
+	* unit-tests/Makefile.am (test_sid_SOURCES): Add this test.
+	(check_PROGRAMS): Likewise.
+
+	* unit-tests/Makefile.am (TESTS): don't duplicate the contents of
+	$(check_PROGRAMS), just use that variable.
+	(LDADD): Add ../libcssc.a.
+	(test_mylist_SOURCES): Don't list object files in libcssc.a.
+	(test_myset_SOURCES): Don't list object files in libcssc.a.
+
+	New unit test for myset<T>.
+	* unit-tests/Makefile.am (check_PROGRAMS): Add test_myset.
+	(LDADD): Just use one LDADD variable for all unit tests.
+	* unit-tests/test_myset.cc: New unit test.
+
+	Add a unit test.
+	* unit-tests/test_mylist.cc: New file; unit test for mylist<T>.
+	* unit-tests/Makefile.am: New file.
+	* configure.ac: Call AC_LIBTOOL.  Include
+	googletest/m4/acx_pthread.m4.  Add --with-pthreads so that our
+	main build and googletest libraries are compatible.  Add
+	unit-tests/Makefile to AC_CONFIG_FILES.
+	* autogen.sh: Run libtoolize in the top level and the googletest
+	directories.
+	* Makefile.am (SUBDIRS): Add unit-tests.
+
+	Include <errno.h> unconditionally where we need it.
+	* admin.cc: Include <errno.h> instead of "err_no.h".
+	* pfile.cc: Likewise.
+	* cssc.h: Likewise.
+	* file.cc: Likewise.
+	* get.cc: Likewise.
+	* run.cc: Likewise.
+	* quit.cc: Likewise.
+	* sccsfile.cc: Likewise.
+	* sf-delta.cc: Likewise.
+	* what.cc: Likewise.
+	* err_no.h: Remove useless file.
+	* Makefile.am (noinst_HEADERS): Remove err_no.h.
+
+	Instead of linking all objects explicitly, use a library.
+	* Makefile.am (noinst_LIBRARIES): Build new library libcssc.a.
+	(libcssc_a_SOURCES): list the source files for the library.
+	(common_sources): Remove unused variable.
+	(sname_srcs): Likewise.
+	(sfile_srcs): Likewise.
+	(mod_srcs): Likewise.
+	(moddelta_srcs): Likewise.
+	(newdelta_srcs): Likewise.
+	(get_LDADD): Add the new library libcssc.a.
+	(delta_LDADD): Likewise.
+	(admin_LDADD): Likewise.
+	(prs_LDADD): Likewise.
+	(what_LDADD): Likewise.
+	(unget_LDADD): Likewise.
+	(sact_LDADD): Likewise.
+	(cdc_LDADD): Likewise.
+	(rmdel_LDADD): Likewise.
+	(prt_LDADD): Likewise.
+	(val_LDADD): Likewise.
+	(what_SOURCES): Remove object files which are now in libcssc.a.
+	(sact_SOURCES): Likewise.
+	(unget_SOURCES): Likewise.
+	(prt_SOURCES): Likewise.
+	(prs_SOURCES): Likewise.
+	(get_SOURCES): Likewise.
+	(rmdel_SOURCES): Likewise.
+	(cdc_SOURCES): Likewise.
+	(admin_SOURCES): Likewise.
+	(delta_SOURCES): Likewise.
+	(val_SOURCES): Likewise.
+
+2010-04-19  James Youngman  <jay@gnu.org>
+
+	Actually configure in and recurse into the googletest directory.
+	* configure.ac: Add googletest in the call to AC_CONFIG_SUBDIRS.
+	* autogen.sh: Run libtoolize in googletest.
+	* Makefile.am (SUBDIRS): Add googletest.
+
+	Implement myset<T> with std::set<T>.
+	* myset.h (myset): Switch to implementing with std::set.  This
+	should reduce the O(N) operations to O(log(N)).
+
+	Use the standard string class.
+	* mystring.h: Assume the availability of the <string> header, so
+	that mystring is always a typedef for std::string.
+	* mystring.cc: Delete.
+	* Makefile.am (sname_srcs): Delete mystring.cc.
+
+	Assume support for the std namespace.
+	* configure.ac: Don't check for the 'std' namespace.  Don't
+	#define STD_NAMESPACE.
+	* mystring.h: Don't use STD_NAMESPACE.
+
+2010-04-18  James Youngman  <jay@gnu.org>
+
+	Assume exception support.
+	* configure.ac: Don't detect exception support, assume it.
+	* admin.cc: Require exception support.
+	* bodyio.cc: Likewise.
+	* cdc.cc: Likewise.
+	* cssc.h: Likewise.
+	* delta.cc: Likewise.
+	* except.h: Likewise.
+	* get.cc: Likewise.
+	* pf-del.cc: Likewise.
+	* prs.cc: Likewise.
+	* prt.cc: Likewise.
+	* quit.cc: Likewise.
+	* rmdel.cc: Likewise.
+	* sact.cc: Likewise.
+	* sf-kw.cc: Likewise.
+	* unget.cc: Likewise.
+	* val.cc: Likewise.
+
+	Remove RCS keywords.
+	* admin.cc: Remove RCS keywords (since we're using git now).
+	* bodyio.h: Likewise.
+	* cap.cc: Likewise.
+	* cdc.cc: Likewise.
+	* cssc.h: Likewise.
+	* delta-iterator.cc: Likewise.
+	* delta-iterator.h: Likewise.
+	* delta-table.h: Likewise.
+	* delta.cc: Likewise.
+	* delta.h: Likewise.
+	* dtbl-prepend.cc: Likewise.
+	* environment.cc: Likewise.
+	* fatalsig.cc: Likewise.
+	* fdclosed.cc: Likewise.
+	* file.cc: Likewise.
+	* filediff.cc: Likewise.
+	* fileiter.cc: Likewise.
+	* filepos.h: Likewise.
+	* get.cc: Likewise.
+	* l-split.cc: Likewise.
+	* linebuf.cc: Likewise.
+	* my-getopt.cc: Likewise.
+	* mystring.cc: Likewise.
+	* mystring.h: Likewise.
+	* pf-add.cc: Likewise.
+	* pf-del.cc: Likewise.
+	* pfile.cc: Likewise.
+	* pfile.h: Likewise.
+	* prompt.cc: Likewise.
+	* prs.cc: Likewise.
+	* prt.cc: Likewise.
+	* quit.cc: Likewise.
+	* rel_list.cc: Likewise.
+	* rl-merge.cc: Likewise.
+	* rmdel.cc: Likewise.
+	* run.cc: Likewise.
+	* sact.cc: Likewise.
+	* sccs-delta.cc: Likewise.
+	* sccsdate.cc: Likewise.
+	* sccsfile.cc: Likewise.
+	* sccsfile.h: Likewise.
+	* sccsname.cc: Likewise.
+	* seqstate.h: Likewise.
+	* sf-add.cc: Likewise.
+	* sf-admin.cc: Likewise.
+	* sf-cdc.cc: Likewise.
+	* sf-chkid.cc: Likewise.
+	* sf-delta.cc: Likewise.
+	* sf-get.cc: Likewise.
+	* sf-get2.cc: Likewise.
+	* sf-get3.cc: Likewise.
+	* sf-prs.cc: Likewise.
+	* sf-prt.cc: Likewise.
+	* sf-rmdel.cc: Likewise.
+	* sf-val.cc: Likewise.
+	* sf-write.cc: Likewise.
+	* showconfig.cc: Likewise.
+	* sid.cc: Likewise.
+	* sid_list.h: Likewise.
+	* split.cc: Likewise.
+	* unget.cc: Likewise.
+	* val.cc: Likewise.
+	* what.cc: Likewise.
+	* writesubst.cc: Likewise.
+
+	Import gnulib modules for various standard headers.
+	* bodyio.cc: Remove HAVE_STDIO_H guards for various standard
+	headers which gnulib will provide/adjust.
+	* bootstrap.conf: Likewise.
+	* canonify.cc: Likewise.
+	* configure.ac: Likewise.
+	* cssc.h: Likewise.
+	* environment.cc: Likewise.
+	* err_no.h: Likewise.
+	* fdclosed.cc: Likewise.
+	* file.cc: Likewise.
+	* filediff.cc: Likewise.
+	* filepos.h: Likewise.
+	* get.cc: Likewise.
+	* my-getopt.cc: Likewise.
+	* sccsfile.cc: Likewise.
+	* sf-chkid.cc: Likewise.
+	* sf-delta.cc: Likewise.
+	* sf-prt.cc: Likewise.
+	* showconfig.cc: Likewise.
+	* sysdep.h: Likewise.
+	* what.cc: Likewise.
+	* gnulib-tests/.gitignore: Ignore various files imported by gnulib.
+	* lib/.gitignore: Likewise.
+
+	Adopt the use of the "bootstrap" command.
+	* bootstrap: New file (copied from coreutils).
+	* bootstrap.conf: New file (adapted from coreutils; no modules are
+	imported just now).
+	* autogen.sh: Remove (obsoleted by bootstrap).
+	* gnulib-tests/.gitignore: New file.
+	* configure.ac: Use AC_CONFIG_AUX_DIR to select build-aux as the
+	aux dir.
+	* README-hacking: New file (copied from coreutils).
+	* .gitmodules: New file.
+	* .gitignore: New file.
+	* docs/texinfo.tex: Remove.
+	* docs/Makefile.am (EXTRA_DIST): Remove texinfo.tex, which is not
+	in this directory any more.
+
+	* NEWS: Move on from CSSC-1.2.0 to CSSC-1.2.1-git.
+	* configure.ac: Likewise.
+
+2009-04-11  James Youngman  <jay@gnu.org>
+
+	* configure.ac, NEWS: Prepare for release of version 1.2.0.
+
+	* INSTALL: Remove from the source repository; allow Automake to
+	use its own copy.
+	* missing: Likewise.
+	* install-sh: Likewise.
+	* docs/texinfo.tex: Likewise
+
+	* configure.ac (AC_CHECK_DECL_IN_HEADER): Quote the definition of
+	the function.
+	(AC_CHECK_GLOBAL): Likewise.
+
+2009-01-03  Alain Williams <addw@phcomp.co.uk> (tiny change)
+
+	* auxfiles/CSSC.spec.in: Reflect changes in the RPM spec
+	file format and requrements since 2003.
+	(License): Changed "Copyright" tag to "License".
+	(%makeinstall): Do not make the /usr/sccs symbolic link.
+	(%files): Add various binaries to %files.
+
+2008-01-18  James Youngman  <jay@gnu.org>
+
+	* configure.ac: Prepare for release of version 1.1.1.
+	* NEWS: Likewise.
+	* docs/cssc.texi: Updated copyright year.  Bumped the revision
+	number and updated the VERSION macro.  Updated the "UPDATED"
+	variable to the current time.
+
+	* version.h (version): Don't show the RCS ID of the main program
+	in the version output; just keep the existing CSSC release number.
+
+	* showconfig.cc: Updated copyright notice to GPL3.
+	 (show_system_line_max): Removed awkward line break.
+
+2008-01-07  James Youngman  <jay@gnu.org>
+
+	* sf-val.cc (validate_isomorphism): Warn if a delta has two
+	derived deltas on the trunk.
+
+	* release.h: Fixed typo in the file header comment.
+
+	* delta-table.h (class cssc_delta_table): Don't initialise sid
+	objects from NULL.
+
+	* fileiter.cc (sccs_file_iterator): Ignore subdirectories, even if
+	they do start with "s.".
+	* file.cc (is_directory): New function.
+	* file.h: Declare is_directory.
+
+2008-01-06  James Youngman  <jay@gnu.org>
+
+	* sf-delta.cc (add_delta): Removed obsolete "XXX" comments.
+	* sf-prs.cc (get): Likewise.
+	* cdc.cc (main): Avoid initialising a sid object by assignment
+	from NULL, because it's not quite clear what that is intended to
+	do.  Instead, use an assignment from sid::null_delta().
+	* sid.cc (null_sid): Implement the function.
+	* sid.h (class sid): Declare sid::null_sid().
+	* get.cc (main): Avoid initialising a sid object by assignment
+	from NULL.
+	* delta.cc (delta_main): Likewise.
+	* val.cc (main): Likewise.
+	* rmdel.cc (main): Likewise.
+	* unget.cc (main): Likewise.
+	* sccsfile.cc (sccs_file::sccs_file): Likewise.
+	* sf-admin.cc (admin): Likewise.
+	* prs.cc (main): Likewise; also disable the -R option.
+
+	* sf-val.cc (validate_isomorphism): Extend the comment setting out
+	the design for this method.  The method is still unimplemented,
+	though.
+
+	Various tidyings-up of TODO items.
+	* prompt.cc (prompt_user): Now that this code is well tested,
+	increase the allocation chunk size and remove the TODO item
+	reminding me to do that.   Use a small _initial_ chunk size to
+	make sure that at least one reallocation takes place, for adequate
+	code coverage.
+	* mystring.cc: Removed TODO comments which actually don't need to
+	be done.
+
+	* sf-admin.cc (admin): If all releases are locked ("admin -fla")
+	and the user tries to unlock just one release, issue an error
+	message (instead of just ignoring the attempt).
+	* docs/cssc.texi (admin): Explain the (already existing)
+	restriction and how to get around it.
+
+	Implement "get -l", "get -L" and "get -lp".
+	* get.cc (main): Added options -l and -L for get.
+	(main): Print the name of the s-file before the delta summary (for
+	-l) and the gotten body (for -p).
+	* tests/get/delta-summary.sh: New tests for the -L, -l and -lp
+	options of get.
+	* sccsname.h (class sccs_name): new method lfile(), returning the
+	name of the l-file.
+	* sccsname.cc (sccs_name::lfile): Implement it.
+	* sccsfile.h (sccs_file::get): Take a parameter summary_file,
+	being a FILE* pointer to which we should emit a delta summary if
+	it's not NULL.
+	* sf-get2.cc (sccs_file::get): Add the new summary_file parameter
+	and, if it's not NULL, emit a delta summary.
+	* docs/cssc.texi (get options): Document the options -l, -lp and
+	-L.
+	(Filenames): Mention the l-file.
+	(prt usage): Mention that the delta summary file contains much the
+	same information.
+	* NEWS: Mention this change.
+
+2008-01-05  James Youngman  <jay@gnu.org>
+
+	* sf-prt.cc (sccs_file::prt): Fixed typo in comment.
+
+	* NEWS: Updated with changes for the early 0.02 releases by
+	diffing the unpacked tar archives.
+
+2007-12-19  James Youngman  <jay@gnu.org>
+
+	* what.cc: String constants chould be const.
+
+	* sf-val.cc (validate_substituted_flags_list): Added missing
+	return statement.
+
+	* sccsfile.cc (sccs_file): Specify the member initialisers in the
+	order they will actually be executed.
+
+	* linebuf.h (class cssc_linebuf): Make buflen size_t rather than
+	int.
+
+	* linebuf.cc (CONFIG_LINEBUF_CHUNK_SIZE): Avoid signed/unsigned
+	issues by using an unsigned constant.
+	(read_line): Ditto for constants in this function.
+
+	* file.cc (set_file_mode): Add missing return statement.
+
+	* bsd/sccs.c (makefile): Avoid signed/unsigned issues by using
+	size_t to index into strings, rather than ints.
+	(form_gname): Ditto.
+	(gstrcat): Ditto for parameter 'length'.
+	(gstrncat): Ditto for parameter 'length'.
+	(gstrcpy): Ditto for parameter 'length'.
+	(gstrncat): Ditto for parameter 'length'.
+
+2007-12-18  James Youngman  <jay@gnu.org>
+
+	* bsd/sccs.c (FBUFSIZ): Make unsigned.
+	(cleanup_environment): Removed unused variable 'pfail'.
+	(main): Avoid spurious warning about lack of return statement, by
+	putting in return statements instead of calls to exit.
+
+	* uu_decode.c: #include <sys/stat.h>, for a declaration of chmod.
+	(test_decode): Avoid compiler warnign about unused argument 'arg'.
+	(test_all): Likewise.
+
+	* user.c: #include <stdlib.h> for a declaration of qsort and malloc.
+	(do_groups): Removed unused variable 'duplicates'.
+
+	* realpwd.cc (main): Avoid compiler warning about unuised argc, argv.
+	* seeker.c (do_unbuffered): Avoid compiler warning about unused
+	argument NAME.
+	(do_blockbuffered): Likewise
+	(do_linebuffered): Likewise
+	(do_nothing): Likewise
+
+2007-12-17  James Youngman  <jay@gnu.org>
+
+
+	* docs/cssc.texi (Missing Features):  Updated URLs to point to the
+	GNU web site instead of SourceForge.
+	* README: Likewise
+	* auxfiles/CSSC.spec.in (URL): Likewise
+	* docs/URLs: Likewise
+	* docs/patches.txt: Likewise
+	* docs/BUGS: Likewise
+
+	Migrate to GPL version 3.
+	* COPYING, admin.cc, autogen.sh, bodyio.cc, bodyio.h, canonify.cc,
+	cap.cc, cdc.cc, configure.ac, cssc.h, defaults.h,
+	delta-iterator.cc, delta-iterator.h, delta-table.cc,
+	delta-table.h, delta.cc, delta.h, depcomp, docs/Makefile.am,
+	docs/cssc.texi, dtbl-prepend.cc, encoding.cc, environment.cc,
+	err_no.h, except.h, fatalsig.cc, fdclosed.cc, file.cc, file.h,
+	filediff.cc, filediff.h, fileiter.cc, fileiter.h, filelock.h,
+	filepos.h, fnsplit.cc, get.cc, ioerr.h, l-split.cc, linebuf.cc,
+	linebuf.h, list.cc, missing, my-getopt.cc, my-getopt.h, mylist.h,
+	myset.h, mystring.cc, mystring.h, pf-add.cc, pf-del.cc, pfile.cc,
+	pfile.h, prompt.cc, prs.cc, prt.cc, quit.cc, quit.h, rel_list.cc,
+	rel_list.h, release.h, relvbr.h, remove.c, rename.c, rl-merge.cc,
+	rmdel.cc, run.cc, run.h, sact.cc, sccs-cgi/sccs.cgi,
+	sccs-cgi/sccs.cgi.text, sccs-delta.cc, sccsdate.cc, sccsdate.h,
+	sccsdiff.sh.in, sccsfile.cc, sccsfile.h, sccsname.cc, sccsname.h,
+	seqstate.cc, seqstate.h, sf-add.cc, sf-admin.cc, sf-cdc.cc,
+	sf-chkid.cc, sf-chkmr.h, sf-delta.cc, sf-get.cc, sf-get2.cc,
+	sf-get3.cc, sf-kw.cc, sf-prs.cc, sf-prt.cc, sf-rmdel.cc,
+	sf-val.cc, sf-write.cc, show-disp.sh, showconfig.cc, sid.cc,
+	sid.h, sid_list.h, sl-merge.h, split.cc, stack.h, strerror.c,
+	strstr.c, sysdep.h, testutils/ekko.c, testutils/last-time.c,
+	testutils/realpwd.cc, testutils/seeker.c, testutils/user.c,
+	testutils/uu_decode.c, testutils/yammer.c, testutils/yes.c,
+	unget.cc, val.cc, valcodes.h, version.h, what.cc, writesubst.cc,
+	testutils/ekko.c, testutils/last-time.c, testutils/seeker.c,
+	testutils/user.c, testutils/yammer.c, testutils/yes.c:
+	Update license to GPL version 3.
+	* NEWS: Mention this change.
+	* docs/cssc.texi (Copying): Put the GPL in a separate, unnumbered,
+	section.
+
+	* docs/cssc.texi: Change license to version 1.2 of the GNU Free
+	Documentation License.
+	* docs/Makefile.am (cssc_TEXINFOS): Depend on fdl.texi, so that it
+	gets distributed.
+	* NEWS: Mention this change.
+
+	* docs/Makefile.am (cssc_TEXINFOS): Don't depend on
+	config-info.text, since we don't actually use it.  This prevents
+	us trying to rebuild the info file during "make distcheck", when
+	the source directory is read-only anyway.
+	* doc/texinfo.tex: Update to the version of texinfo.tex used in
+	automake-1.8.  Yo avoid future compatibility issues, it makes
+	sense to remove this file from CVS in fact, but we won't do that
+	just yet.
+
+	* tests/bsd-sccs/delsfile.sh (cleanup): Also clean up ./s.foo when
+	we're finished.
+
+	Fix build problems caused by the fact that generating
+	testutils/Makefile in the top level directory produces
+	a Makefile that expects to use config.h, while we actually
+	want to use DEFS in the testutils subdirectory.
+	* configure.ac: Call AC_OUTPUT only once.  Do not emit
+	testutils/Makefile.
+	* testutils/configure.ac: Fixed typo.
+
+
+2007-06-21  James Youngman  <jay@gnu.org>
+
+	* bsd/sccs.c: Updated the copyright text to be consistent with the
+	COPYING.bsd file (by removing the advertising clause).
+
+	* sccsfile.cc (print_subsituted_flags_list): Return true if
+	nothing failed (as opposed to falling off the end of the
+	function).   This prevents spurious x-file write errors if the y
+	flag is unset.
+
+	* cssc.h: Require exception support to compile.  This is not
+	strictly necessary for successful operation, but without exception
+	support "get s.foo s.bar" will not process s.bar if we failed on
+	s.foo.  So exception support is required for full SCCS
+	compatibility.
+
+2007-06-20  James Youngman  <jay@gnu.org>
+
+	* bsd/sccs.c (unedit): Fix "sccs unedit /tmp/SCCS/s.foo will
+	cause ./s.foo to be unlinked" bug, by forming the g-file name
+	from the p-file name, as opposed to the name of the file on the
+	command line (because the file named on the command line gould be
+	either the g-file or the s-file).
+	* docs/BUGS: Mention the bugfix.
+	* tests/bsd-sccs/delsfile.sh: New test, for this bug.
+
+	* .gitignore: Ignore Emacs editor backups.
+
+	* cap.cc, val.cc: Add explicit template instantiation directives to
+	support compilation with GCC's -fno-implicit-templates option.
+	* dtbl-prepend.cc, fileiter.cc, sccs-delta.cc: ditto
+	* sccsfile.cc: Ditto.  Also include "mylist.h" to get the method
+	definitions for the templates.
+
+	* .gitignore, docs/.gitignore, testutils/.gitignore: New files.
+
+	* tests/common/test-common: Work around an apparent bug in Bash
+	3.1.17(1) in which "$@$ac_c" expands to DEL${ac_c} when $1 is "".
+	That broke echo_nonl, causing some tests to fail.
+
+2007-06-19  James Youngman  <jay@gnu.org>
+
+	* unused/configs/cf-bcc.h, unused/configs/cf-djgpp.h,
+	unused/configs/cf-redhat.h, unused/configs/cf-sls.h,
+	unused/configs/cf-xenix.h, unused/configs/mf-msdos.mak,
+	unused/configs/mf-unix.mak, unused/Makefile.am, unused/README,
+	unused/_chmod.cc, unused/configs/README, unused/dosfile.cc,
+	unused/dummy.cc, unused/ffsync.cc, unused/fsync.cc,
+	unused/linux.diffs, unused/move-if-change, unused/pipe.cc,
+	unused/pipe.h, unused/sid_list.cc: Removed unused files.
+
+	Update or add various copyright notices.
+	* sccs-cgi/sccs.cgi, testutils/ekko.c, testutils/last-time.c,
+	testutils/realpwd.cc, testutils/seeker.c, testutils/user.c,
+	testutils/uu_decode.c, testutils/yammer.c, testutils/yes.c,
+	docs/gpl.texi, docs/texinfo.tex, sid_list.h, sl-merge.h, split.cc,
+	stack.h, strstr.c, sysdep.h, unget.cc, val.cc, valcodes.h,
+	what.cc, writesubst.cc, rel_list.h, release.h, relvbr.h,
+	rl-merge.cc, rmdel.cc, run.cc, run.h, sact.cc, sccs-delta.cc,
+	sccsdate.cc, sccsdate.h, sccsfile.cc, sccsfile.h, sccsname.cc,
+	sccsname.h, seqstate.cc, seqstate.h, sf-add.cc, sf-admin.cc,
+	sf-cdc.cc, sf-chkid.cc, sf-chkmr.h, sf-delta.cc, sf-get.cc,
+	sf-get2.cc, sf-get3.cc, sf-kw.cc, sf-prs.cc, sf-prt.cc,
+	sf-rmdel.cc, sf-val.cc, sf-write.cc, show-disp.sh, showconfig.cc,
+	sid.cc, sid.h, cap.cc, cdc.cc, configure.ac, cssc.h, defaults.h,
+	delta-iterator.cc, delta-iterator.h, delta-table.cc,
+	delta-table.h, delta.cc, delta.h, depcomp, dtbl-prepend.cc,
+	encoding.cc, environment.cc, err_no.h, except.h, fatalsig.cc,
+	fdclosed.cc, file.cc, file.h, filediff.cc, filediff.h,
+	fileiter.cc, fileiter.h, filelock.h, filepos.h, fnsplit.cc,
+	get.cc, ioerr.h, l-split.cc, linebuf.cc, linebuf.h, list.cc,
+	missing, my-getopt.cc, my-getopt.h, mylist.h, myset.h,
+	mystring.cc, mystring.h, pf-add.cc, pf-del.cc, pfile.cc, pfile.h,
+	prompt.cc, prs.cc, prt.cc, quit.cc, quit.h, rel_list.cc,
+	Makefile.am, admin.cc, autogen.sh, bodyio.cc, bodyio.h,
+	canonify.cc: Updated FSF address in source files
+	* COPYING: Fixed the FSF address.
+	* Makefile.am, remove.c, rename.c, sccsdiff.sh.in, strerror.c,
+	version.h: Included copyright notices in some files where these
+	were missing
+
+2007-03-14  James Youngman  <jay@gnu.org>
+
+	* NEWS, ChangeLog: Updated with (not very) recent changes.
+
+	* AUTHORS: Fixed typo
+
+	* get.cc, sf-get.cc: Fixed a typo in a comment
+
+2007-03-14  James Youngman  <jay@gnu.org>
+
+	* AUTHORS: Fixed typo
+
+	* get.cc, sf-get.cc: Fixed a typo in a comment
+
+2006-07-13  James Youngman  <jay@gnu.org>
+
+	* tests/prt/TODO: Updated email address
+
+2005-12-04  James Youngman  <jay@gnu.org>
+
+	* docs/cssc.texi: Corrected typo (tirivial change, from Alex Brincko)
+
+2005-11-23  James Youngman  <jay@gnu.org>
+
+	* configure.ac, sccsfile.cc, sccsfile.h, NEWS:
+	Tolerate leading spaces in the counts of inserted/deleted/unchanged lines in the delta table; System III seems to produce/tolerate these (see Neil Mayhew's bug report regarding a pre-1985 file)
+
+2005-06-18  James Youngman  <jay@gnu.org>
+
+	* file.cc, filelock.h, quit.cc, quit.h:
+	Applied Sourceforge patch 1223116, allowing CSSC to be compiled on Darwin.  Darwin's version of GCC doesn't like #pragma implementation.
+
+2005-04-06  James Youngman  <jay@gnu.org>
+
+	* docs/Platforms:
+	Indicate that under Cygwin, CSSC must be used on filesystems mounted
+	in 'binary mode'.
+
+2005-04-04  James Youngman  <jay@gnu.org>
+
+	* pf-add.cc: Updated copyright year.
+
+	* pf-add.cc:
+	Removed some unused code (which had already been disabled with #if 0).
+
+2005-01-22  James Youngman  <jay@gnu.org>
+
+	* configure.ac: CSSC release 1.0.1
+
+	* NEWS: Better description of the problem for SourceForge bug 865422
+
+	* docs/cssc.texi: Added 2005 top copyright years.
+
+	* docs/cssc.texi: Updated timestamp.
+
+	* ChangeLog: Indicated the release of 1.0.1.
+
+	* ChangeLog: Updated change log from CVS comments.
+
+	* NEWS: Added latest news.
+
+	* docs/cssc.texi:
+	Ensured that the section names for cross-references which appear in
+	the printed output actually bear the correct title for the section
+	they refer to.
+
+2004-10-17  James Youngman  <jay@gnu.org>
+
+	* docs/Platforms: CSSC now builds under GCC-3.4.
+
+	* docs/cssc.texi: Updated edition/version.
+
+	* docs/cssc.texi:
+	Indicate that "admin -h" performs the same checks as "val" as well as
+	checking the checksum.
+
+	* Makefile.am, admin.cc:
+	Fixed SourceForge bug 1043880: admin -h should invoke val
+
+	* sf-get2.cc, tests/get/sf865422.sh:
+	Fixed SourceForge bug 865422: if a SID is listed in a pfile, that can force a branch
+
+	* sccsdiff.sh.in:
+	Fixed SourceForge bug 966010, sccs sccsdiff -r cannot have space
+	before revision number.   We still will have similar problems
+	elsewhere in the suite, I suspect.
+
+	* sf-prs.cc, sf-delta.cc:
+	Fixed SourceForge bug 1045768: CSSC does not compile with gcc 3.4
+
+2004-10-16  James Youngman  <jay@gnu.org>
+
+	* docs/CREDITS, docs/CREDITS.short.txt: Added Yann Dirson.
+
+2004-10-10  James Youngman  <jay@gnu.org>
+
+	* ChangeLog: Updated from CVS log messages.
+
+	* README: Fixed typo
+
+	* docs/cssc.texi: Added missing full stop.
+
+	* configure.ac:
+	Indicate that this is once again the CVS development version.
+
+	* configure.ac: This is release 1.00.
+
+	* docs/URLs:
+	Added GNU FTP site URL in preparation for official 1.0 release.
+
+	* docs/TODO: Added disclaumer about the obsoleteness of the file.
+
+	* docs/tests-todo.txt:
+	Removed a couple of entries for tests that now exist.
+
+	* docs/Platforms: Minor updates and corrections to typos.
+
+	* README: Updated the status of the release.
+
+	* NEWS, configure.ac, myset.h, sccsfile.cc, sccsfile.h, sf-admin.cc, sf-get.cc, sf-prs.cc, sf-prt.cc, sf-val.cc, sf-write.cc, writesubst.cc, ChangeLog:
+	update copyright years
+
+	* docs/cssc.texi:
+	The file was also changed in 2003 and 2004.  Hence update the
+	copyright years.
+
+	* docs/cssc.texi: Updated edition - to be released with CSSC 1.00!
+
+	* sf-prs.cc:
+	SF bug 1040827: Solaris 9's "prs" does not produce any output for the
+	"y" flag.  Hence for compatibility nor should we.
+
+	* tests/admin/Makefile.am, tests/admin/hardlinks.sh, tests/admin/y-flag.sh, docs/cssc.texi, myset.h, sccsfile.cc, sccsfile.h, sf-admin.cc, sf-get.cc, sf-prs.cc, sf-prt.cc, sf-val.cc, sf-write.cc, writesubst.cc:
+	Added support for the SCCS 'y' flag - SF bug 1040827
+
+2004-10-03  James Youngman  <jay@gnu.org>
+
+	* NEWS: Updated with new news.
+
+	* bsd/sccs.c:
+	Fixed SourceForge bug 806715 (incompatibility of -d flag with the
+	"sccs print" command).
+
+	* docs/cssc.texi:
+	Be more specific about which version of SCO has the 'x' flag.
+
+	* docs/cssc.texi, file.cc, file.h, get.cc, my-getopt.cc, sccsfile.cc, sccsfile.h, sf-admin.cc, sf-delta.cc, sf-prt.cc, sf-write.cc:
+	Implemented SCO SCCS's x flag; Sourceforge bug ID 969833
+
+2004-04-25  James Youngman  <jay@gnu.org>
+
+	* tests/common/command-names:
+	Make sure we locate the "sccs" binary correctly now that $dir will
+	normally not begin with "..".
+
+	* tests/common/command-names:
+	Oops, make the tests work if you don't set the $dir variable.
+
+	* tests/common/command-names:
+	Figure out the absolute pathname of the directory containing the CSSC tools.
+
+	* depcomp: depcomp - new file required by automake
+
+2003-12-13  James Youngman  <jay@gnu.org>
+
+	* tests/what/whatbasic.sh:
+	Provide a more helpful error message when 'ekko' fails
+
+	* linebuf.cc, linebuf.h, sccsfile.cc:
+	Resolve the strchr() problem pointed out bin SourceForge patch 857193
+
+2003-12-10  James Youngman  <jay@gnu.org>
+
+	* NEWS, bsd/sccs.c, my-getopt.cc:
+	Some changes to eliminate compilation errors/warnings from Sun CC 5.5
+
+	* docs/CREDITS.short.txt, docs/CREDITS: Added Tom Duffy.
+
+2003-12-09  James Youngman  <jay@gnu.org>
+
+	* bsd/sccs.c, configure.ac, NEWS:
+	pass through more options to diff (be it GNU diff or vanilla diff)
+
+	* bsd/sccs.1:
+	Documented the extra options now passed to diff by "sccs diffs".
+
+	* bsd/sccs.c:
+	Also pass through the w option (which is not GNU diff specific).
+
+	* bsd/sccs.c:
+	Pass through the options aBdHpqsvy to diff (these are GNU diff options).
+
+	* bsd/sccs.c: Support "sccs diffs -u".
+
+2003-12-08  James Youngman  <jay@gnu.org>
+
+	* auxfiles/CSSC.spec.in:
+	Handed over "Packager" status for Red Hat to Thomas Duffy.
+
+	* auxfiles/CSSC.spec.in:
+	Applied SourceForge patch 856398, submitted by Thomas Duffy
+
+	* file.cc, file.h, get.cc:
+	Various changes as suggested by Dick Streefland, relating to the setting/clearing of the DOS archive bit and to systems which lack CONFIG_UIDs
+
+	* tests/delta/errorcase.sh:
+	Oops, this change should have been in 0.16alpha.pl0
+
+	* sact.cc:
+	Fixed SF bug 768002, mismatch in output of sact between CSSC and SCCS when only one file name is given on the command line
+
+	* sf-write.cc: Fixed SF bug 856158, compilation error on CYGWIN
+
+2003-12-07  James Youngman  <jay@gnu.org>
+
+	* ChangeLog: Brought up to date (again).
+
+	* docs/Makefile.am: make mostlyclean should delete cssc.info.
+
+	* testutils/Makefile.am:
+	make distclean should delete decompress_stdin.sh.
+
+	* tests/get/sf111140.sh, tests/get/sf479916.sh:
+	Remove test files at the end of testing.
+
+	* tests/get/gg_get_ix.sh:
+	Remove the working files at the end of the tests.
+
+	* ChangeLog: Brought up to date.
+
+	* docs/cssc.texi: Indicated the new version.
+
+	* configure.ac: Bumped the version number.
+
+	* NEWS: Fixed SourceForg bug 581740.
+
+	* bsd/Makefile.am, testutils/condense-valgrind.pl, file.cc, file.h, get.cc:
+	Honour the user's choice of umask - fixes SpurceForge bug 581740
+
+	* docs/get-spec.txt: Removed the out of date file get-spec.txt
+
+	* docs/Makefile.am: Removed getspec.txt (since it is out of date).
+
+	* NEWS:
+	On Red Hat Linux, info files live in /usr/share/info not /usr/info.
+
+	* auxfiles/CSSC.spec.in:
+	infodir has moved from /usr/info to /usr/share/info.
+
+	* quit.cc:
+	Fix SourceForge bug number 816679, which caused a coredump if
+	cleanup::~cleanup() was called before there are any entries in the
+	cleanup list.
+
+	* tests/bsd-sccs/driver-basic.sh, tests/bsd-sccs/sf595594.sh:
+	Fixed SourceForge bug 806699: Make the test work even if the user had
+	set $PROJECTDIR.
+
+	* NEWS, sf-get2.cc, tests/get/defsid.sh:
+	Make "get -e" take account of the "d" flag.
+
+2003-05-29  James Youngman  <jay@gnu.org>
+
+	* sccsfile.cc: sccs_file::sccs_file(): Ensure that this->f is NULL when
+	we return for mode CREATE (previously it was uninitialised).
+	This fixes SourceForge bug 745608.
+
+	* sf-write.cc:
+	CYGWIN: end_update: Only close the SCCS file if it is open (the FILE*
+	is not NULL).  On platforms other than CYGWIN, we don't close he file
+	anyway.
+
+2003-05-19  James Youngman  <jay@gnu.org>
+
+	* docs/Platforms: Corrected email address for Clement T. Cole.
+
+2003-05-18  James Youngman  <jay@gnu.org>
+
+	* tests/common/test-common:
+	Cope with the case where "remove" is called with no arguments.
+
+2003-05-16  James Youngman  <jay@gnu.org>
+
+	* Makefile.am: Also clean "sccsdiff" for "make clean".
+
+2003-05-05  James Youngman  <jay@gnu.org>
+
+	* sf-get2.cc:
+	"get -e" now takes notice of the default SID when deciding the SID of the new delta.
+
+2003-03-15  James Youngman  <jay@gnu.org>
+
+	* README: Added pointer to docs/Platforms.
+
+	* docs/Platforms: Added MacOS X porting tip from Brad Crittenden.
+
+2003-03-08  James Youngman  <jay@gnu.org>
+
+	* tests/get/excl_ig_2.sh: Don't cat the s-file at the end!
+
+	* tests/get/t-option.sh:
+	Added test for Sourceforge bug #699318 ("get -t s.foo" when foo
+	contains only one SID, created by "admin -iX -r1.1.1.1 s.foo").
+
+	* sccsfile.h, sf-get2.cc:
+	Fixed Sourceforge bug #699318 ("get -t s.foo" when foo contains only
+	one SID, created by "admin -iX -r1.1.1.1 s.foo").
+
+	* sf-get2.cc: Simplified the matching code.
+
+	* sf-get2.cc:
+	find_requested_sid(): separated the does-this-SID-match decision from
+	the is-this-the-best-yet decision.
+
+2003-03-01  james_youngman  <jay@gnu.org>
+
+	* sf-write.cc, sccsfile.h:
+	Recognise BitKeeper files by their different checksum lines, and
+	accept also the BK-specific comment lines and extra flags (though
+	don't accept them if the file is not a BK file).
+
+	* sccsfile.cc: Updated copyright years.
+
+	* sccsfile.h, sccsfile.cc:
+	Recognise BitKeeper files by their different checksum lines, and
+	accept also the BK-specific comment lines and extra flags (though
+	don't accept them if the file is not a BK file).
+
+2003-02-13  james_youngman  <jay@gnu.org>
+
+	* tests/get/sf664900.sh, sf-get2.cc:
+	One-line fix for SourceForge bug 664900 by Darren Warner.
+
+	* configure.ac, acconfig.h:
+	Fix CSSC bug 650420 - warnings from autoconf/autoheader about obsolete usage
+	of acconfig.h file.
+
+2002-12-08  james_youngman  <jay@gnu.org>
+
+	* testutils/Makefile.am:
+	Include "decompress_stdin.sh.in" in the distribution.
+
+	* ChangeLog: Updated for 0.15pl0.
+
+	* configure.ac: Bumped to version 0.15pl0.
+
+	* NEWS: Added NEWS items for version 0.15pl0.
+
+2002-11-02  james_youngman  <jay@gnu.org>
+
+	* seqstate.cc, seqstate.h, sf-get2.cc, sf-get.cc:
+	support for ignored deltas
+
+	* tests/get/excl_ig_2.sh: added new test script
+
+	* tests/get/excl_ig_1.sh: enabled test xg6
+
+	* docs/cssc.texi:
+	Added section on included, excluded and ignored deltas.
+
+	* tests/get/middle-fail.sh:
+	Tut - use ${admin} not "admin" as a command name - make sure we are
+	testing the correct instance!
+
+	* tests/bsd-sccs/sf595594.sh:
+	Tut - use ${sccs} not sccs as a command name - make sure we are
+	testing the correct instance!
+
+	* delta.cc:
+	Indicate the presence of the -p option in the usage message.
+
+	* configure.ac:
+	Fixed SF bug 623164: you need to include <ctype.h> to use isdigit().
+
+	* cssc.h:
+	SF bug 623164: you need to include <ctype.h> to use isdigit().
+
+	* get.cc: Updated copyright year.
+
+	* autogen.sh: Recurse into subdirectories where appropriate.
+
+	* tests/common/command-names:
+	Corrected bug where more than one argument is passed to test (which
+	now justifiably complains when you do this).
+
+2002-10-04  James Youngman <jay@gnu.org>
+
+	* auxfiles/CSSC.spec.in:
+	Change references to sccs.1 to sccs.1* because RPM v4 compresses all manpages.
+
+2002-09-27  James Youngman <jay@gnu.org>
+
+	* docs/cssc.texi:
+	Changed all instances of @url to @uref, except where that would
+	produce a broken link.
+
+	* docs/cssc.texi: Updated the update timestamp.
+
+	* docs/cssc.texi:
+	Applied changes suggested by Timothy Bedding (SourceForge bug ID
+	589542).
+
+2002-09-20  James Youngman <jay@gnu.org>
+
+	* docs/cssc.texi: Updated the "last update" time.
+
+	* docs/cssc.texi: Corrected typo.
+
+	* docs/cssc.texi: Re-ordered some paragraphs for clarity.
+
+	* docs/cssc.texi:
+	Explain that the line length limits apply only to lines which will end
+	up in the histry file - and that over-length lines already in the
+	history file will be correctly coped with by "get".
+
+	* docs/cssc.texi: Corrected cross-reference.
+
+	* docs/cssc.texi: Explain how to figure out which diff command is used.
+
+	* docs/cssc.texi:
+	Expanded the discussion of the (lack of) line length limits in CSSC.
+
+2002-08-16  James Youngman <jay@gnu.org>
+
+	* get.cc:
+	If we fail to set the mode on the g-file correctly, delete it and propagate the failure information
+
+	* tests/bsd-sccs/driver-basic.sh, tests/common/command-names, get.cc:
+	SourceForge bug 595594 - all g-files processed after a failing file are deleted
+
+	* tests/get/middle-fail.sh:
+	SourceForge bug 595594 fixed - if we failed to get a previous file, all g-files processed later are deleted even if they were successful
+
+	* tests/bsd-sccs/sf595594.sh: Initial version of test.
+
+2002-07-26  James Youngman <jay@gnu.org>
+
+	* run.cc: Updated copyright year.
+
+	* run.cc:
+	Fixed inappropriate boolean inversion on systems where HAVE_FORK is not defined
+
+	* testutils/configure.in, configure.in:
+	Removed old configure.in files - replaced by configure.ac
+
+	* testutils/COPYING, testutils/ChangeLog, testutils/INSTALL, testutils/NEWS, testutils/configure.ac, testutils/ekko.c, testutils/lndir.c, testutils/realpwd.cc, testutils/seeker.c, testutils/user.c, testutils/yammer.c, testutils/yes.c, README, configure.ac, run.cc, testutils/AUTHORS:
+	Updated configure.in to configure.ac - we can now use autoconf version 2.53
+
+2002-04-07  James Youngman <jay@gnu.org>
+
+	* tests/delta/p-option.sh:
+	Some initial tests for the "-p" option of delta.
+
+	* NEWS: New check of link count when opening SCCS file
+
+	* docs/cssc.texi, tests/admin/hardlinks.sh, configure.in, sccsfile.cc:
+	It is not allowed to have hard links to an SCCS file (that is, the link count may not be greater than 1).  Violating this rule now results in CSSC refusing to open that SCCS file
+
+	* scripts/rev-freq.sh: Corrected a shell syntax error
+
+2002-04-05  James Youngman <jay@gnu.org>
+
+	* tests/admin/locks.sh, tests/admin/users.sh, tests/binary/auto.sh, tests/binary/seeking.sh, tests/common/need-prt, tests/prt/all-512.sh, tests/prt/default.sh, tests/prt/exists.sh, tests/prt/nodel.sh, tests/prt/reportmr.sh, NEWS, README, docs/cssc.texi, sf-prs.cc:
+	Added support for running the test suite against versions of SCCS that lack a prt program
+
+2002-04-04  James Youngman <jay@gnu.org>
+
+	* docs/cssc.texi:
+	get -a now has test cases, so we no longer need to indicate that it is untested.
+
+	* get.cc, sccsfile.h, sf-get2.cc: support for the -a option of get
+
+	* sccsfile.cc, quit.h, sccsdate.cc, sf-kw.cc, sf-val.cc, sf-write.cc, admin.cc, quit.cc:
+	Added global function 'warning' so that we don't have to issue warnings by calling 'errormsg'
+
+	* tests/get/gg_get_ix.sh:
+	Removed redundant comment about tests that used to fail with CSSC (but
+	no longer do so).
+
+	* tests/get/optorder.sh: Fixed typo
+
+	* tests/common/test-common:
+	minor changes for the formatting of labels at the start of the lines of output of the tests - to preserve whitespace
+
+	* tests/get/a-option.sh: Tests for the "-a" option of "get".
+
+2002-04-03  James Youngman <jay@gnu.org>
+
+	* configure.in:
+	Updated the version number to indicate that any version someone checks
+	out of CVS is from CVS (we use the suffix CVSDEVEL).
+
+	* configure.in:
+	Up-date version number to 0.14alpha.pl0, prior to making the release
+
+	* Makefile.am: Added file myset.h to the distribution
+
+	* testutils/Makefile.am:
+	Added some files missing from the distribution (notably mogrify.awk).
+
+	* ChangeLog: updated from log entries on other files
+
+	* docs/cssc.texi: enhancements to the sections on interoperability
+
+	* configure.in:
+	Added HAVE_GNU_DIFF, which indicates if the diff command to be used s GNU diff
+
+	* showconfig.cc:
+	Show the likely limit on the length of a line for the diff utility being used
+
+	* acconfig.h:
+	Added HAVE_GNU_DIFF, which indicates if the diff command to be used s GNU diff
+
+	* environment.cc:
+	Show the likely limit on the length of a line for the diff utility being used
+
+	* delta.cc, get.cc, tests/get/errorcases.sh:
+	Invalid options produce a return value of 1 (on Solaris 2.6) not 2
+
+	* testutils/compare_gets.sh:
+	Do not compare removes deltas - so do not pass -a to prs
+
+2002-04-02  James Youngman <jay@gnu.org>
+
+	* NEWS: Corrected typos.
+
+	* tests/delta/options.sh:
+	Unknown option error results in return value of 1, not 2.
+
+	* tests/delta/errorcase.sh, sf-delta.cc:
+	A pre-existing d-file is not an error condition
+
+	* seqstate.cc, seqstate.h, sf-get.cc, sf-get2.cc, sf-get3.cc, tests/get/gg_get_ix.sh, tests/get/sf111140.sh:
+	Do includes before excludes (except in the case of command-line includes) - fixes bug reported by gerry.green@cle.philips.com
+
+	* tests/get/sf111140_full.txt: test file
+
+	* tests/get/create.sh: Extra checks as we go along.
+
+2002-03-28  James Youngman <jay@gnu.org>
+
+	* NEWS: Updated with the latest info
+
+	* docs/TESTING: added Gerry Green
+
+	* tests/get/gg_get_ix.sh, sccsfile.h, sf-delta.cc, sf-get.cc, sf-get2.cc, sf-get3.cc, sf-prs.cc, Makefile.am:
+	Make sure everybody is using sccs_file::prepare_seqstate() in the same way
+
+	* tests/get/gg_get_ix.sh: new test script from Gerry Green
+
+2002-03-26  James Youngman <jay@gnu.org>
+
+	* tests/get/errorcases.sh, docs/tests-todo.txt, get.cc:
+	gcov fixes - invalid SIDs for get -i and get -x
+
+	* docs/.cvsignore: Ignore cssc.info-4
+
+	* sccs-cgi/.cvsignore: Ignore Makefile.in.
+
+	* docs/tests-todo.txt, tests/delta/errorcase.sh:
+	Added extra 5test cases to increate test coverage
+
+	* sf-delta.cc:
+	If the p-file indicates a SID which is not in the SCCS file, indicate
+	which SID we have a problem with in the error message we produce.
+
+	* docs/tests-todo.txt: Removed todo items for the tests we've addded.
+
+	* testutils/user.c: Various enhancements for testing "delta".
+
+	* docs/cssc.texi: Comments about authorised user list
+
+2002-03-25  James Youngman <jay@gnu.org>
+
+	* tests/delta/errorcase.sh:
+	Extra test cases for the authorised user list.
+
+	* sf-get3.cc: Do not use '!' exclusion for authorised user list
+
+	* sccsfile.h, sf-get3.cc, sf-get2.cc, sf-delta.cc:
+	delta should check that the invoking user is allowed to make deltas
+
+	* docs/cssc.texi:
+	Made the SCCS file flags section headings reflect the contents better
+
+	* tests/delta/errorcase.sh: initial checkin
+
+	* tests/delta/MRs.sh:
+	fixes to the tests - after testing against Solaris 2.6
+
+	* tests/delta/basic.sh:
+	Added tests for the no-id-keywords-is-fatal flag
+
+	* testutils/user.c:
+	added feature - 'tell me a group of which I am not a member'
+
+	* sccs-cgi/Makefile.am: initial version
+
+	* docs/tests-todo.txt: Removed the todo-items we've already done
+
+	* NEWS: We removed the -Y and -M options of delta
+
+	* Makefile.am: recurse into sccs-cgi also
+
+	* configure.in: generate  sccs-cgi/Makefile in AC_OUTPUT
+
+	* val.cc: Fixed header comment which indicated what the file was for
+
+	* sccsfile.cc:
+	Use  v_unknown_feature_warning() instead of  v_errormsg() since the latter is no longer exported from quit.cc
+
+	* my-getopt.cc:
+	Produce usage message is the command line exhibits wrong usage of options
+
+	* tests/common/test-common: Added function rename()
+
+	* tests/delta/MRs.sh:
+	Extra test - should not be able to check in file without specifying an MR if the v flag is set
+
+	* tests/delta/basic.sh:
+	extra tests (deletion of lines, checking of -r option against p-file)
+
+	* tests/delta/n-option.sh:
+	remove any test files we will need to control at the start
+
+	* quit.cc, quit.h: Don't export v_errormsg as a global function
+
+2002-03-24  James Youngman <jay@gnu.org>
+
+	* testutils/gcov-util.sh: Put the title in <title>...</title>.
+
+	* testutils/gcov-util.sh:
+	Define $NOW (date at which the summary was prepared).
+
+	* testutils/gcov-util.sh:
+	Tool for slicing and dicing the results of gcov.
+
+	* docs/tests-todo.txt:
+	Added list of tests to be written in tests-todo.txt
+
+	* delta.cc: Removed options -M and -Y (not in normal SCCS anyway)
+
+	* tests/delta/options.sh:
+	Added tests for the various command-line options of delta.
+
+	* NEWS: Brought the NEWS fie up to date with the ChangeLog file.
+
+2002-03-23  James Youngman <jay@gnu.org>
+
+	* docs/cssc.texi: Use @option for options, not @samp.
+
+	* configure.in: spell --disable-max-line-length correctly
+
+	* sf-prs.cc:
+	Print sequence numbers in correct (reverse) order; don't include ignored deltas in :DI: (for Solaris 2.6 compatibility)
+
+	* docs/cssc.texi:
+	Documented val.  Included information about differences between the various SCCS versions
+
+2002-03-22  James Youngman <jay@gnu.org>
+
+	* tests/prs/keywords.sh: Re-enabled all the tests...
+
+	* tests/prs/keywords.sh:
+	Added test cases for having more than one SID in the included or
+	excluded SID list.
+
+2002-03-21  James Youngman <jay@gnu.org>
+
+	* sf-prs.cc:
+	Backed out of the change made for previous revision - they should be
+	shown as seq_nos after all...
+
+	* tests/prs/keywords.sh: :Dx: and friends should emit seq_no values.
+
+	* sf-prs.cc:
+	For lists of included/excluded deltas, print the SID rather than the seq_no.
+
+	* myset.h, sf-delta.cc:
+	Only list each included/excluded delta once in each include/exclude list.
+
+	* tests/prs/keywords.sh: Added tests for more keywords.
+
+2002-03-20  James Youngman <jay@gnu.org>
+
+	* ChangeLog: Brought up to date with new log entries.
+
+2002-03-19  James Youngman <jay@gnu.org>
+
+	* val.cc:
+	Various fixes for the value returned in all sorts of validation-faulure cases
+
+	* tests/what/Makefile.am:
+	We have a file whatbasic.sh but no keywords.sh
+
+	* tests/common/command-names: added val
+
+	* tests/Makefile.am: New test directory, 'val'
+
+	* tests/sact/sactbasic.sh, tests/val/Makefile.am, tests/val/valbasic.sh, tests/val/y2k.sh:
+	reduced lines of untested code to 2083 - tests added for valand sact
+
+	* bsd/sccs.c: Fixed typos causing compilation errors
+
+	* bsd/sccs.c:
+	Fixed SourceForge bug 531884, compiler warning on 64-bit systems
+
+	* file.cc:
+	While trying to do atomic NFS file locking, sleep for a bit if we fail
+	to make the hard link from nfslckNNNN to z.foobar.
+
+	* sf-delta.cc, filediff.cc, filediff.h:
+	Fixed SourceForge bug 530969 - FILE* leak in fildiff.cc
+
+	* docs/Platforms:
+	Updated following testing on the SourceForge compile farm
+
+	* README: Inform reader that GNU make is probably required.
+	Removed the "stop press" which is now old news.
+
+2002-03-18  James Youngman  <jay@gnu.org>
+
+	* tests/what/whatbasic.sh, what.cc:
+	Added an extra test (test w22) in whatbasic.sh to cover the whole of the print_what() function in what.cc.
+
+	* tests/Makefile.am: Added test-what.
+
+	* docs/cssc.texi, tests/Makefile.am, tests/what/Makefile.am, NEWS, my-getopt.cc, my-getopt.h, what.cc:
+	Added tests for what - and therefore some bugfixes too
+
+	* tests/what/whatbasic.sh:
+	On the other hand, this version passes when run against Solaris 2.6...
+
+	* tests/what/whatbasic.sh:
+	This version passes for CSSC but has not been checked against SCCS.
+
+	* docs/Platforms:
+	Works on Solaris 2.6 and Debian 3.0 as well as GCC version3
+
+	* docs/patches.txt: Corrected a typo
+
+2002-03-17  James Youngman  <jay@gnu.org>
+
+	* tests/common/config-data:
+	Include binary file support tests on SunOS.  Note that some tests are
+	*still* disabled on SunOS, because they still fail (e.g. the ability
+	to automatically revert to binary-mode when reading the initial body
+	from stdin).
+
+	* bsd/sccs.c:
+	Issue more helpful messages about the unimplemented comb and help commands.
+
+	* bsd/sccs.c: Corrected spelling error in warning message.
+
+	* bsd/sccs.c:
+	Since we are not includeing <strings.h> and there is not need to
+	depend on it, roll our own rindex() and index() functions from the
+	functions provided by <string.h>.
+
+2002-03-16  James Youngman  <jay@gnu.org>
+
+	* tests/prs/body.sh, tests/prs/s_foo_bd_output.txt, tests/prs/sample_foo:
+	Test the :BD: keyword of prs
+
+	* bodyio.cc:
+	valgrind-detected bug: do keyword checking on the uuencoded version of the data
+
+	* docs/cssc.texi, tests/prs/body.sh: Tests for prs -d:GB:
+
+2002-03-10  James Youngman  <jay@gnu.org>
+
+	* prompt.cc, sccsdate.cc, sccsfile.cc, sccsfile.h, sf-delta.cc, sf-prs.cc:
+	valgrind: don't use sccs_date(NULL) - previously we had an uninitialised variable sccs_date.second as a result of using sccs_date::sccs_date(NULL)
+
+2002-03-04  James Youngman  <jay@gnu.org>
+
+	* docs/cssc.texi:
+	Added glossary; spelling corrections; updated copyright years
+
+2002-03-03  James Youngman  <jay@gnu.org>
+
+	* tests/sccsdiff/rap.sh:
+	Fixed sourceforge bug 489311 (Locale settings cause test failure)
+
+2002-02-25  James Youngman  <jay@gnu.org>
+
+	* tests/Makefile.am, tests/sact/Makefile.am, tests/sact/sf513800.sh, tests/sact/sf513800_1.uue, tests/sact/sf513800_2.uue, sccsdate.cc:
+	test for Sourceforge bug sf513800.sh and a fix for the same
+
+2002-02-23  James Youngman  <jay@gnu.org>
+
+	* ChangeLog, ChangeLog.2:
+	Moved the changelog entries from ChangeLog into ChangeLog.2.  New
+	changeLog entries to go into ChangeLog, and the ChangeLog.1 and
+	ChangeLog.2 files contain historical changelogs.
+
+2001-12-04  James Youngman  <jay@gnu.org>
+
+	* delta.cc: Fixed SourceForge bug 489005
+
+2001-12-02  James Youngman  <jay@gnu.org>
+
+	* NEWS, except.h, quit.cc, quit.h, sccsfile.cc, sccsfile.h, tests/prt/all-512.sh, tests/prt/default.sh, tests/prt/nodel.sh:
+	Added warning when we see an excluded delta (since we are not certain
+	we handle this correctly).  The warnig includes a pointer tot he web
+	page explaining what the user should do about this.
+
+2001-12-01  James Youngman  <jay@gnu.org>
+
+	* configure.in:
+	bumped version - to avoid confusion with previous release
+
+	* NEWS, bodyio.cc, file.cc, file.h, filediff.cc, get.cc, sf-delta.cc, sf-kw.cc:
+	Fixed sourceforge bugs 480136, 481519, 481707, 484278 - all related to setuid operation, and in fact all dupliactes of each other
+
+2001-11-29  James Youngman  <jay@gnu.org>
+
+	* docs/CREDITS, sccs-cgi/sccs.cgi, sccs-cgi/sccs.cgi.text, AUTHORS:
+	Added Richard Kettlewell's sccs.cgi script.  Updated AUTHORS and
+	CREDITS files appropriately.
+
+	* quit.cc:
+	Fixed compilation error ocurring when HAVE_EXCEPTIONS is not defined
+
+2001-11-25  James Youngman  <jay@gnu.org>
+
+	* configure.in:
+	Set the language back to C after doing the check for broken printf
+	macros in the glibc header files.  (Also set up for a release).
+
+	* get.cc, sf-get2.cc, tests/common/command-names, tests/get/sf479916.sh:
+	Fixed sourceforge bug #479916 - get -t problem
+
+	* sccsdiff.sh.in: Corrected a syntax error.
+
+	* NEWS: Fixed SF bug 450900.
+
+	* tests/get/removed-delta.sh: Test case for SourceForge bug 450900
+
+	* delta-table.cc:
+	SF bug #450900 - if you try to check out a version for
+	editing, and the SID that would ordinary be selected exists
+	but is removed, we should indeed use it.
+
+	* ChangeLog: Updated with recent change log entries.
+
+	* Makefile.am, NEWS, configure.in:
+	Fixed debian bug #120080 (sccsdiff cannot find get iuis /usr/sccs
+	symlink is missing)
+
+	* sccsdiff.sh.in:
+	fixed Debian  Bug#120080: sccs sccsdiff doesn't work (sccsdiff assumes /usr/sccs symlink exists)
+
+	* bsd/sccs.c, tests/admin/comment.sh, tests/admin/init-mr.sh, tests/admin/locks.sh, tests/admin/t-option.sh, tests/admin/users.sh, tests/prs/exists.sh, tests/prs/keywords.sh, tests/prt/all-512.sh, tests/prt/all.expected.Z, tests/prt/expected/nodel.-u, tests/prt/expected/nodel.-u-f, tests/prt/expected/nodel.-u-f-t-b, NEWS, configure.in, sf-admin.cc, sf-prs.cc, sf-prt.cc:
+	Brought test suite - and code - into line with Solaris 2.6 behaviour; largely changes for formatting of prt/prs output, but also a change to the behaviour of admin -fl
+
+

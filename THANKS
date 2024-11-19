@@ -1,0 +1,122 @@
+The Time-stamp: line indicates when this file was last modified.
+Time-stamp: <2024-05-12 10:44:26 james>
+
+The MySC package is CSSC's ancestor.  MySC compiled under GCC 2.4.5
+(but not GCC 2.7.x), and was written by Ross Ridge.
+
+The "sccs" program and its accompanying documentation were written by
+Eric Allman, and are copyright (C) 1980, 1993 The Regents of the
+University of California.  See the file ``COPYING.bsd'' for more
+information.
+
+The CGI script "sccs.cgi" and its associated documentation was written
+by Richard Kettlewell <rjk@greenend.org.uk> and is Copyright 2001
+Richard Kettlewell.
+
+This package was for all intents and purposes written (that is,
+updated for modern C++ compilers, fixed, enhanced, made more portable,
+ported, fixed and documented) by James Youngman, <jay@gnu.org>.  James
+also added a test suite, wrote the test cases, converted the package
+to use GNU Autoconf and GNU Automake, and wrote the manual.  He's the
+current maintainer.  Only (and all) code still in the Kernighan and
+Ritchie format is still left over from MySC.  New code is indented
+according to the GNU specification (this is used as a device for
+keeping track of the provenance of the code).
+
+Larry McVoy has provided explanations of some aspects of the operation
+of "genuine" SCCS, and other valuable help.  Larry is the author of
+another SCCS clone, as a side effect of a more significant project.
+See http://www.bitmover.com/ for more details.
+
+Lars Hecking <lhecking@nmrc.ucc.ie> provided valuable help with
+Autoconf and portability information for Solaris, SunOS, AmigaOS, and
+IRIX.  Plus, lots and *lots* of testing and useful bug reports.
+
+
+Dave Bodenstab <imdave@mcs.net> is to be thanked for providing patches
+for FreeBSD-2.0.5 support -- these were largely to fix silly
+assumptions (location of "true", GCC-2.6.3 support), nothing catering
+to FreeBSD especially.
+
+Malcolm Boff <Malcolm_Boff@compuserve.com> provided a useful bug
+report for FreeBSD (apparently "echo -e -n" is invalid; the options
+are exclusive).
+
+Richard Polton <richardp@scopic.com> provided Solaris testing, plus
+testing with gigantic inputs, and rewrote sccsdiff, also supplying
+test cases for it (in fact the only person so far [as of 1998-06-16]
+to do so!)  Richard also submitted code to remove the "xalloc"
+wrappers for operator ::new so that all the code now uses new and
+delete rather than a mixture of that and xalloc()/free().
+
+Support for development snapshots of GCC (as of 1997-08-11) was
+contributed by Fila Kolodny <fila@ibi.com>.
+
+Peter Kjellerstedt <Peter.Kjellerstedt@axis.com> has provided many
+concise and useful bug reports, mostly with patches.  In particular,
+he has provided patches that allow CSSC to fix SCCS files which have
+been corrupted by non-Y2K-compliant versions of SCCS.
+
+John Interrante <interran@crd.ge.com> added support in cssc.texi for
+"make install-info", and several improvements for auxfiles/CSSC.spec.
+
+Marko Rauhamaa <marko@tekelec.com> provided useful bug reports for
+SCCS files produced by Sun's Code manager; it produces artifacts in
+SCCS files not produced by "ordinary" SCCS.  Examples include lines
+of the form "^AU 0" and "^At 0".  (Stop Press: these lines were
+produced by (a bug in) Sun's Code Manager).
+
+Achim Hoffann did his best to help me find a bug that was staring me
+right in the face.  Many apologies for making him gather all sorts of
+information which wasn't in the end necessary.  I'm sorry!
+
+Dick Streefland provided patches for fixing several problems; core
+dumps when no SCCS files were specified, and some prototype mismatches.
+He also added checks for out-of-space conditions for get and prs.
+
+Greg A. Woods <gwoods@acm.org>, <woods@planix.com>, <woods@weird.com>
+provided the "yammer.c" program that allows us to run the test suite
+on systems that lack "nl", for example NetBSD/SPARC 1.3.2.  He has
+also provided valuable help on keeping multiple versions of Autoconf
+happy.  Greg also provided a patch which eliminated the compiler
+warnings on sccs.c, after I had given up trying.
+
+Michael Sterrett and Aron Griffis provided several improvements to the
+RPM spec file, and some punctuation corrections for cssc.text which
+make version 3.12f of makeinfo happy.
+
+William W. Austin provided a bug report regarding SCCS files
+containing flag lines which are only four characters long.
+
+Hyman Rosen provided fixes for better compatibility with strange SCCS
+files produced by other implementations (e.g. ^Am after ^Ac instead of
+before it).
+
+Mark Reynolds provided a fair number of portability improvements (IRIX
+6.5, SunOS 4.1.3, Ultrix 4.2).
+
+Sergey Ostashenko provided patches to allow the processing of SCCS
+files with gaps in the chain of used sequence numbers, and to allow
+two deltas to have the same sequence number, on the condition that one
+of them is a removed delta.
+
+Frank van Maarseveen provided a patch for cdc and rmdel: if there is a
+problem, delete the lock file even if we are running setuid.
+
+Mark Fortescue provided patches bug-fixes relating to SID selection
+and cutoff dates.
+
+Jeff Sheinberg provided a patch to sccs.c, fixing an incorrect
+allocation size for a buffer.
+
+Thomas Duffy has taken on the role of building RPM and SRPM packages
+for CSSC.
+
+Yann Dirson maintains the Debian package for CSSC.
+
+Ryan Carsten Schmidt contirubuted build fixes for Mac OS.
+
+
+Local Variables:
+mode: Text
+End:

@@ -1,0 +1,4 @@
+testutils/ekko\.c
+testutils/lndir\.c
+testutils/yammer\.c
+testutils/yes\.c
